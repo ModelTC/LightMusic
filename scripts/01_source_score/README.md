@@ -11,8 +11,8 @@
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/01_source_score/run.sh \
   --run runs/qiu_yi_nong_modular_test

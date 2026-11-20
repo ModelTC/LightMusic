@@ -16,11 +16,13 @@ from ..voice_candidates import candidate_seeds, assessment, finite_diagnostics, 
 def generate(request, output):
     out = Path(output)
     backend = request.get('backend', 'seed_vc')
-    voice = resolve_voice('finetuned', request['voice_profile'], backend=backend)
+    mode = request.get('mode', 'finetuned')
+    if mode not in {'finetuned', 'lora'}: raise ValueError('Candidate mode must be finetuned or lora')
+    voice = resolve_voice(mode, request['voice_profile'], backend=backend)
     seeds = candidate_seeds(request['seed'], request['candidate_count'], request.get('candidate_seeds'))
     source, reference = Path(request['source']), Path(request['reference'])
     source_info = inspect_audio(source)
-    report = {'schema_version': 2, 'mode': 'finetuned', 'voice': voice_record(voice),
+    report = {'schema_version': 2, 'mode': mode, 'voice': voice_record(voice),
               'source_sha256': sha256(source), 'reference_sha256': sha256(reference),
               'settings': {'steps': request['steps'], 'seeds': seeds, 'semitones': 0, 'auto_f0_adjust': False},
               'candidates': [], 'recommended_id': None, 'selected_id': None,
@@ -33,7 +35,7 @@ def generate(request, output):
         row = {'id': name, 'seed': seed, 'status': 'failed', 'generation_status':'failed', 'evaluation_status':'not_run', 'eligible': False, 'rejection_reasons': []}
         command = [sys.executable, '-m', 'music_cover.backends.cli', 'convert', '--input', str(source),
                    '--reference', str(reference), '--output', str(folder), '--steps', str(request['steps']),
-                   '--seed', str(seed), '--voice-mode', 'finetuned', '--voice-profile', str(voice['profile'])]
+                   '--seed', str(seed), '--voice-mode', mode, '--voice-profile', str(voice['profile'])]
         if backend in {'so_vits_svc', 'rvc', 'fish_diffusion'}:
             write_json(folder/'request.json', {**request, 'seed': seed})
             command = [str(python_for(ROOT, backend)), '-m', 'music_cover.backends.cli',
@@ -89,5 +91,7 @@ def generate(request, output):
     conversion=json.loads((out/selected['conversion']).read_text())
     conversion['candidate_selection']={**selection_fields(report['candidates']), 'seed':selected['seed'],
         'ecapa':selected.get('metrics',{}).get('speaker_similarity'), 'report':'candidates.json'}
+    conversion['reference_policy'] = request.get('reference_policy', 'task')
+    if 'task_reference_sha256' in request: conversion['task_reference_sha256'] = request['task_reference_sha256']
     conversion['assessment']=selected.get('assessment',{'status':'unassessable','blocks_delivery':False})
     write_json(out/'conversion.json', conversion)

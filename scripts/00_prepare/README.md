@@ -9,8 +9,8 @@
 本模块直接读取原始素材，没有上游生成模块。首次创建运行需要通过 --config 提供任务参数。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/00_prepare/run.sh \
   --config configs/tasks/qiu_yi_nong_synthwave_sun_yanzi.yaml \

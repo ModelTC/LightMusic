@@ -30,13 +30,13 @@ mkdir -p cache
 DEPLOY_LOCK_BACKUP=$(mktemp -d "$PWD/cache/weights-before-deploy.XXXXXX")
 cp configs/generation_models.lock.json configs/voice_models.lock.json configs/separation_model.lock.json configs/seed_svc.local.yml "$DEPLOY_LOCK_BACKUP/"
 
-/opt/conda/bin/python scripts/setup/download_models.py
-/opt/conda/bin/python scripts/setup/download_separator_model.py
-/opt/conda/bin/python scripts/setup/download_voice_models.py
+envs/base/bin/python scripts/setup/download_models.py
+envs/base/bin/python scripts/setup/download_separator_model.py
+envs/base/bin/python scripts/setup/download_voice_models.py
 
 # 选择任意微调/SVC/RVC/Fish 路线时还需要评估资产；零样本 05 本身不要求 ECAPA。
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope evaluation
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope evaluation --check-only
+envs/base/bin/python scripts/setup/setup_voice_training.py --scope evaluation
+envs/base/bin/python scripts/setup/setup_voice_training.py --scope evaluation --check-only
 ```
 
 `download_voice_models.py` 会一次准备五组 Seed-VC/F0 资产；仅用 SVC/RVC/Fish 时其中部分不是推理必需，但 02 和质量评估仍需 `models/RMVPE/rmvpe.pt`。按需精简时以 `common/resources.py` 的 requirements 为准，不能删除复用资源。
@@ -60,11 +60,11 @@ SVC 的 RMVPE 与 RVC/Seed-VC 的 RMVPE 文件格式、大小不同，不能因�
 
 ```bash
 # 只运行选定路线；推理已有人物模型时省略 --training。
-/opt/conda/bin/python scripts/setup_svc.py --download --training
-/opt/conda/bin/python scripts/setup_rvc.py --download --training
+envs/base/bin/python scripts/setup_svc.py --download --training
+envs/base/bin/python scripts/setup_rvc.py --download --training
 # 不下载，仅检查：
-/opt/conda/bin/python scripts/setup_svc.py --training
-/opt/conda/bin/python scripts/setup_rvc.py --training
+envs/base/bin/python scripts/setup_svc.py --training
+envs/base/bin/python scripts/setup_rvc.py --training
 ```
 
 这两个脚本根据 `configs/so_vits_svc_assets.lock.json` / `configs/rvc_assets.lock.json` 验证大小和 SHA256，不负责安装 Python 包，也不会训练人物模型。默认 SVC 路线为 ContentVec 768l12 + RMVPE + 标准 NSF-HiFiGAN，未使用浅层扩散或增强器；标准声码器在生成器模型内，不需要另下扩散权重。
@@ -80,7 +80,7 @@ SVC 的 RMVPE 与 RVC/Seed-VC 的 RMVPE 文件格式、大小不同，不能因�
 
 ```bash
 bash scripts/05_voice_conversion/fish_diffusion/download_assets/run.sh
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope evaluation
+envs/base/bin/python scripts/setup/setup_voice_training.py --scope evaluation
 bash scripts/05_voice_conversion/fish_diffusion/preflight/run.sh \
   --scope training --model-load --gpu 0
 ```
@@ -99,14 +99,14 @@ bash scripts/05_voice_conversion/fish_diffusion/preflight/run.sh \
 
 ```bash
 # 只在准备 Seed-VC 训练时需要 training scope。
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope all
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope all --check-only
+envs/base/bin/python scripts/setup/setup_voice_training.py --scope all
+envs/base/bin/python scripts/setup/setup_voice_training.py --scope all --check-only
 ```
 
 录音分离默认 `--mode lead`，需 BS-RoFormer 与 Karaoke 两套权重及 YAML。现有 `setup_review_assets.py` 同时处理 Demucs/Basic Pitch；只为训练分离素材时，不必连带部署 07–09。可用现有 audio-separator 的下载模式准备 Karaoke，再检查仓库锁定哈希：
 
 ```bash
-/opt/conda/bin/audio-separator \
+envs/base/bin/audio-separator \
   --model_filename mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt \
   --model_file_dir models/separation --download_model_only
 ```
@@ -125,3 +125,7 @@ bash scripts/05_voice_conversion/fish_diffusion/preflight/run.sh \
 | Fish Diffusion | `models/voices/my_voice/fish_diffusion/v001/` | `voice.json`、`model.ckpt`、`config.json`、`validation.json` |
 
 以 `voice.json` 记录的实际文件名和哈希为准。迁移时保留完整目录，不手改已签名模型文件；旧档案内嵌路径需要与当前解析器核对。训练和导出命令见 [training.md](training.md)。主流程的 `--voice-profile` 指向 `voice.json`。
+
+## Seed-VC V1 LoRA
+
+LoRA 复用上面的 V1 44.1 kHz/F0 底模和公共辅助权重，不下载 V2。新训练仍需训练与评估附加资产；人物导出包必须携带 adapter、参考、配置与底模绑定信息。首次部署运行 `python3 scripts/setup/apply_seed_vc_lora.py`，之后用 `--check` 核验主仓库补丁；操作步骤见 [LoRA 手册](../../docs/25_seedvc_lora_manual.md)。

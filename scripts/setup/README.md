@@ -1,67 +1,24 @@
-# 环境与素材准备
+# 环境、模型与素材准备
 
-本目录集中管理模型下载、演示素材准备和环境记录。原 `scripts/` 下同名入口保持兼容。它不属于每首歌的 00–11 阶段，不读取 `runs/` 中的中间产物；模型与环境准备好后，每首歌从 00 开始。
+本目录不属于单曲 00–11。命令从项目根目录执行，先 source scripts/environment.sh。环境部署见 [环境说明](../../docs/03-environment.md)，完整下载版本与哈希见 [权重参考](../../skill/references/weights.md)。
 
-## 已配置服务器上的使用示例
+| 操作 | 入口 |
+|---|---|
+| SheetSage2/MERT/YuE2/VAE | envs/control/bin/python scripts/setup/download_models.py |
+| BS-RoFormer | envs/control/bin/python scripts/setup/download_separator_model.py |
+| Seed-VC/F0 公共模型 | envs/control/bin/python scripts/setup/download_voice_models.py |
+| 评审与主唱分离资产 | envs/separator/bin/python scripts/setup/setup_review_assets.py |
+| 训练/评估附加资源 | envs/base/bin/python scripts/setup/setup_voice_training.py --scope all --check-only |
+| 原生 V1 LoRA 补丁 | python3 scripts/setup/apply_seed_vc_lora.py |
+| 补丁只读校验 | python3 scripts/setup/apply_seed_vc_lora.py --check |
 
-检查当前任务所需的环境和模型，不生成歌曲：
-
-```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
-
-bash scripts/run_baseline.sh \
-  --config configs/tasks/qiu_yi_nong_synthwave_sun_yanzi.yaml \
-  --preflight
-```
-
-环境检查通过后，开始准备“孙燕姿＋秋意浓＋Synthwave / Dance-pop”的输入：
+下载器会写入模型与相应锁；已有部署先核对，避免覆盖用户配置。LoRA 安装器要求固定上游和哈希，拒绝覆盖未知本地修改；主仓库补丁必须随代码发布。
 
 ```bash
-bash scripts/00_prepare/run.sh \
-  --config configs/tasks/qiu_yi_nong_synthwave_sun_yanzi.yaml \
-  --run runs/qiu_yi_nong_modular_test
-```
-
-00 读取配置中的 `data/raw/songs/qiu_yi_nong.mp3`、`data/raw/lyrics/qiu_yi_nong.txt` 和 `data/raw/references/sun_yanzi/reference.wav`，输出到 `runs/qiu_yi_nong_modular_test/stages/00_prepare/attempt_001/artifacts/`。具体数据衔接见 [00 的 README](../00_prepare/README.md)。
-
-## 本目录脚本的具体用法
-
-以下命令均在项目根目录执行，仅在需要对应准备操作时使用。下载脚本会写入模型或素材及相应锁记录；环境捕获会更新环境和资产锁文件。环境创建与恢复步骤见 [使用说明](../../USAGE.md) 和 [仓库恢复说明](../../docs/08-repository.md)。
-
-| 操作与具体命令 | 读取内容 | 产生的数据及消费者 |
-| --- | --- | --- |
-| `envs/control/bin/python scripts/setup/download_models.py` | 脚本中固定 revision 的模型仓库 | `models/SheetSage2`、`models/MERT-v2-FullSong`、`models/YuE2-3B`、`models/YuE2-Vae`，以及 `configs/generation_models.lock.json`；供 01、03、08 使用 |
-| `envs/control/bin/python scripts/setup/download_separator_model.py` | 固定的分离权重下载地址 | `models/separation/` 和 `configs/separation_model.lock.json`；供 02、04 使用 |
-| `envs/control/bin/python scripts/setup/download_voice_models.py` | 固定 revision 的 Seed-VC、RMVPE 等模型仓库 | `models/` 中换声及音高模型、`configs/voice_models.lock.json`、`configs/seed_svc.local.yml`；供 02、05、10 使用 |
-| `envs/separator/bin/python scripts/setup/setup_review_assets.py` | 固定的评审分离权重及已安装的 Basic Pitch 包 | `models/separation/` 中的 karaoke 权重、`models/review/` 和 `configs/review_models.lock.json`；供 07、09 使用 |
-| `envs/control/bin/python scripts/setup/prepare_demo.py` | 官方演示歌曲、歌词和 LibriSpeech 参考素材 | `data/raw/` 下《今晚不眠》演示素材、`configs/demo.json`、`data/demo_sources.json`；供使用 `--demo` 的 00 读取。本脚本不下载本例的《秋意浓》和孙燕姿素材 |
-| `/opt/conda/bin/python scripts/setup/capture_environment.py` | 已安装的五个项目环境及 base、模型文件、GPU/FFmpeg 信息及四个上游 commit | `configs/*.installed.txt`、`configs/environments.lock.json`、`configs/local_assets.lock.json`；用于环境追溯与缓存身份 |
-| `/opt/conda/bin/python scripts/setup/fetch_wheels.py` | 脚本中列出的安装包下载地址 | `cache/wheels/`；供后续安装使用，不自动安装，也不生成歌曲产物 |
-
-例如，调整环境并完成安装后重新记录实际环境和模型哈希：
-
-```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
-
-/opt/conda/bin/python scripts/setup/capture_environment.py \
+source scripts/environment.sh
+bash scripts/run_baseline.sh --config configs/local/my_cover.yaml --until 06_mix --preflight
+envs/base/bin/python scripts/setup/capture_environment.py \
   --output-dir cache/environment_snapshot --skip-assets
 ```
 
-## Seed-VC 音色训练与评估资源
-
-`setup_voice_training.py` 用固定 revision 和完整 SHA256 下载/检查附加资源。已有 Seed-VC 环境先按 [权重指南](../../docs/12_model_weights.md) 安装 `configs/requirements-voice-adaptation.txt`。
-
-```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
-# 已训练模型推理的候选评估，只需 evaluation 资产。
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope evaluation
-# 需要训练时再准备所有资产；已下载时只核验。
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope all --check-only
-```
-
-读取 `configs/voice_training_assets.lock.json`；evaluation 输出到 `models/voice_evaluation/ecapa/`，training 输出到 `models/OpenVoiceV2/` 与 `models/Seed-VC/se_db.pt`。训练的 00–03 和主流程 00–11 分开执行，见 [音色手册](../../docs/13_voice_adaptation.md)。
-
-使用 `--output-dir` 仅生成新快照，不改参与缓存身份的运行锁。省略该参数才会更新 configs；详见[当前环境说明](../../docs/03-environment.md)。
+环境捕获指定 output-dir 不改 configs 运行锁；省略会更新缓存身份。检查源代码使用 scripts/check_project.py，不需要重新计算全部模型哈希。演示素材下载器 prepare_demo.py 只准备它声明的公开演示素材，不提供历史实验歌手数据。

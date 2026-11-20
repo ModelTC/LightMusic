@@ -62,7 +62,7 @@ def download(cache_dir=None):
 
 
 def check(scope='inference',model_load=False,gpu=0,output=None):
-    if Path(sys.prefix).resolve()!=Path('/opt/conda').resolve():raise RuntimeError('Use base /opt/conda/bin/python')
+    if Path(sys.prefix).resolve()!=(ROOT/'envs/base').resolve():raise RuntimeError('Use base project envs/base/bin/python')
     from .common.resources import preflight
     preflight(ROOT,['fish_diffusion','voice_metrics'],mp3=True)
     check_assets(training=scope=='training')

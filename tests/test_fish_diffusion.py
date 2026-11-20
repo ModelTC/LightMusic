@@ -38,7 +38,7 @@ class FishRouting(unittest.TestCase):
         self.assertEqual(p['candidate_seeds'],[42,43,44]);self.assertEqual(p['steps'],30)
     def test_all_voice_interpreters_are_base(self):
         for backend in ('fish_diffusion','seed_vc','so_vits_svc','rvc'):
-            self.assertEqual(python_for('/different/mount',backend),Path('/opt/conda/bin/python'))
+            self.assertEqual(python_for('/different/mount',backend),Path('/different/mount/envs/base/bin/python'))
     def test_bad_sampler_and_chunks(self):
         for value in ({'sampler_interval':True},{'sampler_interval':0},{'sampler_interval':101},
                       {'chunk_seconds':float('nan')},{'overlap_seconds':0},{'pad_seconds':10},

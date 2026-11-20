@@ -216,7 +216,7 @@ class EntryTests(unittest.TestCase):
         self.assertEqual(len(scripts), 8)
         for file in scripts:
             text = file.read_text()
-            self.assertIn('/opt/conda/bin/python', text)
+            self.assertIn('${MUSIC_COVER_BASE_PREFIX}/bin/python', text)
             self.assertNotIn('/envs/', text); self.assertNotIn('run_baseline.sh', text)
 
 

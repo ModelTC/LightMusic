@@ -284,7 +284,8 @@ class PublicationTests(unittest.TestCase):
         ids = [m.ID for m in self.modules]
         self.run_stages(ids)
         published = self.root / 'run/deliverables'
-        self.assertTrue(published.is_symlink())
+        self.assertFalse(published.is_symlink())
+        self.assertTrue(published.is_dir())
         old_target = published.resolve()
         manual = self.root / 'run/reviews/review_scores.csv'
         manual.write_text('expert notes that must survive')
@@ -296,7 +297,9 @@ class PublicationTests(unittest.TestCase):
         state = self.run_stages(ids, request={**self.request, 'variant':'two'})
         self.assertEqual(state['status'], 'completed')
         self.assertEqual((published / 'result.txt').read_text(), 'two')
-        self.assertTrue(old_target.is_dir())
+        history = list((self.root / 'run/deliverables_history').iterdir())
+        self.assertEqual(len(history), 1)
+        self.assertEqual((history[0] / 'result.txt').read_text(), 'one')
         self.assertEqual(manual.read_text(), 'expert notes that must survive')
 
 

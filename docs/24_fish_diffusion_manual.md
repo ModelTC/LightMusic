@@ -1,5 +1,7 @@
 # Fish Diffusion 手动验证：单依纯＋绿洲
 
+> 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
+
 按脚本逐步创建训练配置、数据、特征、模型和推理配置，再完成 05、06。仅复用公共底模、原始素材和已成功的歌曲 00–04，不复用历史训练 YAML、切片或人物模型。训练与推理均使用 `/opt/conda/bin/python`。
 
 ## 示例名称、已有输入与输出位置

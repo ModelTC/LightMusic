@@ -2,10 +2,10 @@
 
 RVC v2 / RMVPE / 48 kHz / 训练集检索索引。模型训练与推理独立；本入口不训练。
 
-直接使用现有 `/opt/conda/bin/python`，包含主控制器和推理子进程。相对路径按项目根目录解析，可从任意工作目录通过脚本绝对路径启动。当前单依纯训练入口和中间产物见[训练步骤](training/00_prepare/README.md)与[RVC 指南](../../../docs/20_rvc.md)。
+直接使用现有 `envs/base/bin/python`，包含主控制器和推理子进程。相对路径按项目根目录解析，可从任意工作目录通过脚本绝对路径启动。当前单依纯训练入口和中间产物见[训练步骤](training/00_prepare/README.md)与[RVC 指南](../../../docs/20_rvc.md)。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+# 在项目根目录执行
 bash scripts/05_voice_conversion/rvc/run.sh \
   --run runs/lhd_lv_zhou_shan_yi_chun_rvc_base_20261103 \
   --config configs/voice_inference/rvc/shan_yi_chun_base_20261103.yaml --gpu 0

@@ -7,7 +7,7 @@
 第 5 步完整示例（第 4 步分离批次及歌曲 00/04 必须已成功）：
 
 ```bash
-bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/finetuned/training/create_config/run.sh \
+bash scripts/05_voice_conversion/finetuned/training/create_config/run.sh \
   --voice-id shan_yi_chun --version manual_20261102 \
   --recordings-dir data/voice_training/shan_yi_chun/manual_20261102/recordings \
   --source-run runs/lhd_lv_zhou_shan_yi_chun_modular_test \
@@ -16,13 +16,13 @@ bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/finetuned/
   --validation-windows 36:12 156:12 --max-steps 1000
 ```
 
-新配置位于 `/data/liuhongda/music-cover-baseline/configs/voice_training/shan_yi_chun_seedvc_manual_20261102.yaml`，之后通过 00_prepare 的 `--config` 传入；训练 run 使用 `runs/voice_training/shan_yi_chun_seedvc_manual_20261102`。预览加 `--plan`，不会写文件。数据集和模型导出路径根据 voice-id/version 推导，也可显式覆盖。
+新配置位于 `configs/voice_training/shan_yi_chun_seedvc_manual_20261102.yaml`，之后通过 00_prepare 的 `--config` 传入；训练 run 使用 `runs/voice_training/shan_yi_chun_seedvc_manual_20261102`。预览加 `--plan`，不会写文件。数据集和模型导出路径根据 voice-id/version 推导，也可显式覆盖。
 
 以下为原有 smoke 示例入口，完整从原始素材开始的单依纯流程见上方第 4、5 步文档：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 bash scripts/05_voice_conversion/finetuned/training/00_prepare/run.sh \
   --config configs/voice_training/sun_yanzi_seed_vc_smoke.yaml \
   --run runs/voice_training/sun_yanzi_seed_vc_smoke_001
@@ -32,4 +32,4 @@ bash scripts/05_voice_conversion/finetuned/training/00_prepare/run.sh \
 
 [完整手册](../../../../docs/13_voice_adaptation.md)
 
-训练、验证和导出均使用 `/opt/conda/bin/python`。配置相对路径以项目根目录解析，运行状态中的 output 相对训练 run。单依纯 + 绿洲的正式 1000 步例子见[完整手册第 7 节](../../../../docs/13_voice_adaptation.md#7-单依纯--绿洲base-环境训练与单版本混音)。
+训练、验证和导出均使用 `envs/base/bin/python`。配置相对路径以项目根目录解析，运行状态中的 output 相对训练 run。单依纯 + 绿洲的正式 1000 步例子见[完整手册第 7 节](../../../../docs/13_voice_adaptation.md#7-单依纯--绿洲base-环境训练与单版本混音)。

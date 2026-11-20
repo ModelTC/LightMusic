@@ -1,5 +1,7 @@
 # 交付、验证与数据保留
 
+> 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
+
 本指南对应 v1.2，包含 Seed-VC 零样本/微调、SVC、RVC、Fish 和 00–11 模块流程。源码版本由 `VERSION` 和 Git commit 标识；验收记录见 VALIDATION.md，模型/数据仍在服务器。
 
 ## 可执行入口

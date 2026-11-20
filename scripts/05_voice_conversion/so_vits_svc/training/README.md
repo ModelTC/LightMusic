@@ -7,7 +7,7 @@
 第一步实例：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+# 在项目根目录执行
 bash scripts/05_voice_conversion/so_vits_svc/training/00_prepare/run.sh \
   --config configs/voice_training/so_vits_svc/yang_kun.yaml \
   --run runs/voice_training/yang_kun_so_vits_svc_v001_20261028

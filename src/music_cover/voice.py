@@ -17,6 +17,8 @@ def merge_voice_config(current, overrides):
     if overrides.get('backend', current.get('backend')) != current.get('backend'):
         merged.update(voice_profile=None, svc={}, rvc={}, fish={}, candidate_seeds=None,
                       candidate_count=1 if overrides['backend'] in {'so_vits_svc', 'fish_diffusion'} else 3)
+    if overrides.get('mode', current.get('mode')) != current.get('mode'):
+        merged['reference_policy'] = 'task'
     merged.update(overrides)
     return merged
 
@@ -33,6 +35,13 @@ def resolve_voice(mode='zero_shot', profile=None, root=ROOT, backend='seed_vc'):
         from .svc import resolve_svc_voice
         return resolve_svc_voice(mode, profile, root)
     if backend != 'seed_vc': raise ValueError('Unsupported voice backend: ' + backend)
+    if mode == 'lora':
+        from .lora import resolve_lora
+        result = resolve_lora(profile, root)
+        config = yaml.safe_load(result['config'].read_text())
+        if config['preprocess_params']['sr'] != 44100 or not config['model_params']['DiT'].get('f0_condition'):
+            raise ValueError('LoRA requires 44.1 kHz F0-conditioned Seed-VC')
+        return result
     if mode not in {'zero_shot', 'finetuned'}:
         raise ValueError('voice mode must be zero_shot or finetuned')
     result = {'mode': mode, 'backend': 'seed_vc'}
@@ -62,7 +71,7 @@ def resolve_voice(mode='zero_shot', profile=None, root=ROOT, backend='seed_vc'):
 def voice_record(resolved):
     result = {k: v for k, v in resolved.items() if not isinstance(v, Path)}
     if resolved.get('backend') in {'seed_vc', 'rvc', 'fish_diffusion'}: result['path_base'] = 'project'
-    for key in ('checkpoint', 'config', 'profile', 'validation', 'index', 'index_manifest'):
+    for key in ('checkpoint', 'config', 'profile', 'validation', 'index', 'index_manifest', 'adapter', 'reference', 'training'):
         if key in resolved:
             result[key] = {'path': portable_path(resolved[key]) if resolved.get('backend') in {'seed_vc', 'rvc', 'fish_diffusion'} else str(resolved[key]),
                            'sha256': sha256(resolved[key])}

@@ -15,15 +15,21 @@ from .common.io import write_json, identity
 from .common.paths import ROOT
 from .voice import BASE_CHECKPOINT, BASE_CONFIG
 from .common.voice_paths import portable_path, training_output
+from .common.cli import nonempty
 
 
 def path(value):
+    if not str(value).strip():
+        raise ValueError('Path must not be empty; check the config or shell variable')
     return (ROOT / Path(value).expanduser()).resolve()
 
 
 def load_config(filename):
     c = yaml.safe_load(path(filename).read_text())
     if not isinstance(c, dict): raise ValueError('Training config must be a mapping')
+    if c.get('adaptation_type') == 'lora':
+        from .lora_training import check_config
+        return check_config(c)
     required = ('voice_id', 'version', 'dataset_dir', 'sources', 'reference')
     if c.get('purpose') != 'dataset_preparation_only': required += ('training', 'validation')
     for key in required:
@@ -41,6 +47,9 @@ def load_config(filename):
 
 
 def dataset_manifest(c):
+    if c.get('adaptation_type') == 'lora':
+        from .lora_training import dataset_manifest as checked
+        return checked(c)
     m = json.loads((path(c['dataset_dir']) / 'manifest.json').read_text())
     if bool(m['smoke_test']) != bool(c.get('smoke_test')) or m['voice_id'] != c['voice_id']:
         raise ValueError('Dataset voice/smoke status differs from config; prepare a new version')
@@ -122,18 +131,27 @@ def prepare(c, run, out, args):
 
 
 def train(c, run, out, args):
+    if c.get('adaptation_type') == 'lora':
+        from .lora_training import train as action
+        return action(c, run, out, args)
     from .backends.voice_train import train_voice
     dataset_manifest(c)
     train_voice(c, run, out, resume=args.resume)
 
 
 def validate(c, run, out, args):
+    if c.get('adaptation_type') == 'lora':
+        from .lora_training import validate as action
+        return action(c, run, out, args)
     from .backends.voice_validate import validate_voice
     dataset_manifest(c)
     validate_voice(c, run, out, args.checkpoint, args.evaluation_split)
 
 
 def export(c, run, out, args):
+    if c.get('adaptation_type') == 'lora':
+        from .lora_training import export as action
+        return action(c, run, out, args)
     m = dataset_manifest(c)
     validation_path = training_output(run, '02_validate') / 'validation.json'
     report = json.loads(validation_path.read_text())
@@ -167,25 +185,51 @@ def export(c, run, out, args):
 STAGES = {'00_prepare': prepare, '01_train': train, '02_validate': validate, '03_export': export}
 
 
-def main():
+def parser():
     parser = argparse.ArgumentParser(description='Seed-VC target-voice adaptation; independent of song inference')
     parser.add_argument('--stage', required=True, choices=STAGES)
-    parser.add_argument('--config', required=True)
-    parser.add_argument('--run', required=True)
+    parser.add_argument('--config', required=True, type=nonempty)
+    parser.add_argument('--run', required=True, type=nonempty)
+    parser.add_argument('--adaptation', choices=['full', 'lora'], help='Require the selected training type')
+    parser.add_argument('--import-run', type=nonempty, help='Import an audited existing LoRA run at 01_train; executes no training')
     parser.add_argument('--resume', action='store_true', help='Restore optimizer, scheduler, step and RNG state')
     parser.add_argument('--max-steps', type=int, help='Total step budget, including resumed steps')
-    parser.add_argument('--checkpoint', action='append', help='Candidate checkpoint; repeat for comparison')
+    parser.add_argument('--checkpoint', action='append', type=nonempty,
+                        help='Candidate file; repeat only for validation comparison. LoRA test defaults to the validation selection.')
     parser.add_argument('--evaluation-split', choices=['validation', 'test'], default='validation')
-    args = parser.parse_args()
-    c = load_config(args.config)
+    return parser
+
+
+def main(argv=None):
+    p = parser()
+    args = p.parse_args(argv)
+    # Reject user-input mistakes before loading models or changing run state.
+    if args.resume and args.stage != '01_train': p.error('--resume is only valid for 01_train')
+    if args.resume and args.import_run: p.error('--resume and --import-run are mutually exclusive')
+    if args.max_steps is not None and args.stage != '01_train': p.error('--max-steps is only valid for 01_train')
+    if args.evaluation_split == 'test' and args.stage != '02_validate': p.error('--evaluation-split test requires 02_validate')
+    if args.checkpoint and args.stage not in {'02_validate', '03_export'}: p.error('--checkpoint requires 02_validate or 03_export')
+    if len(args.checkpoint or []) > 1 and (args.stage == '03_export' or args.evaluation_split == 'test'):
+        p.error('Export and test accept exactly one checkpoint; compare candidates on validation first')
+    for value in args.checkpoint or []:
+        if not path(value).is_file(): p.error(f'Checkpoint file does not exist: {path(value)}')
+    try:
+        c = load_config(args.config)
+    except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as error:
+        p.error(f'Cannot load training config: {error}')
+    actual = 'lora' if c.get('adaptation_type') == 'lora' else 'full'
+    if args.adaptation and args.adaptation != actual: p.error('Training adaptation/config mismatch')
+    if args.import_run and (actual != 'lora' or args.stage != '01_train'): p.error('--import-run requires LoRA stage 01_train')
     if c.get('purpose') == 'dataset_preparation_only' and (args.stage != '00_prepare' or args.max_steps is not None):
-        parser.error('This config is for dataset preparation only; generate a backend training config first')
+        p.error('This config is for dataset preparation only; generate a backend training config first')
     if args.max_steps is not None:
-        if args.max_steps < 1: parser.error('--max-steps must be positive')
+        if args.max_steps < 1: p.error('--max-steps must be positive')
         c['training']['max_steps'] = args.max_steps
     os.environ['CUDA_VISIBLE_DEVICES'] = str(c.get('gpu', 0))
     os.environ['TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD'] = '1'
     run = path(args.run)
+    if args.stage != '00_prepare' and not (run / 'state.json').is_file():
+        p.error(f'Training run is not prepared: {run}. Run training 00_prepare first.')
     run.mkdir(parents=True, exist_ok=True)
     with (run / '.lock').open('a+') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -194,7 +238,13 @@ def main():
         previous = {'01_train': '00_prepare', '02_validate': '01_train', '03_export': '02_validate'}.get(args.stage)
         if previous and state['stages'].get(previous, {}).get('status') != 'succeeded':
             # Interrupted training may be resumed from its durable checkpoint.
-            raise ValueError(f'Run {previous} successfully first')
+            p.error(f'Run training {previous} successfully first in {run}')
+        if actual == 'lora' and args.stage == '02_validate':
+            from .lora_training import validation_candidates
+            try:
+                validation_candidates(run, args)
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                p.error(str(error))
         base = run / 'stages' / args.stage
         base.mkdir(parents=True, exist_ok=True)
         numbers = [int(x.name[8:]) for x in base.glob('attempt_*') if x.name[8:].isdigit()]
@@ -208,7 +258,11 @@ def main():
         from .engine import Tee
         try:
             with (attempt / 'process.log').open('a') as log, contextlib.redirect_stdout(Tee(sys.stdout, log)), contextlib.redirect_stderr(Tee(sys.stderr, log)):
-                STAGES[args.stage](c, run, out, args)
+                if actual == 'lora' and args.stage == '00_prepare':
+                    from .lora_training import prepare as action
+                    action(c, run, out, args)
+                else:
+                    STAGES[args.stage](c, run, out, args)
             artifacts = {str(p.relative_to(out)): {'sha256': sha256(p), 'bytes': p.stat().st_size}
                          for p in out.rglob('*') if p.is_file()}
             write_json(attempt / 'outputs.json', {'status': 'succeeded', 'artifacts': artifacts})

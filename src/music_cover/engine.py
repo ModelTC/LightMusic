@@ -269,14 +269,30 @@ class Pipeline:
     def publish(self):
         artifact_dir = Path(self.state['stages']['11_delivery']['attempt']) / 'artifacts'
         destination = self.run / 'deliverables'
-        # A complete previous delivery stays available until a validated replacement exists.
-        if destination.exists() and not destination.is_symlink():
-            history = self.run / 'deliverables_history'
-            history.mkdir(exist_ok=True)
-            destination.rename(history / (dt.datetime.now().strftime('%Y%m%d_%H%M%S') + '_' + uuid.uuid4().hex[:6]))
         temporary = self.run / ('.delivery_' + uuid.uuid4().hex)
-        temporary.symlink_to(artifact_dir.relative_to(self.run), target_is_directory=True)
-        temporary.replace(destination)
+        previous = None
+        try:
+            # A physical delivery keeps the H100 project independent of directory links.
+            # Complete the copy before moving a previous published version.
+            shutil.copytree(artifact_dir, temporary, symlinks=False)
+            if destination.exists() or destination.is_symlink():
+                history = self.run / 'deliverables_history'
+                history.mkdir(exist_ok=True)
+                previous = history / (dt.datetime.now().strftime('%Y%m%d_%H%M%S') + '_' + uuid.uuid4().hex[:6])
+                if destination.is_symlink():
+                    shutil.copytree(destination.resolve(strict=True), previous, symlinks=False)
+                    destination.unlink()
+                else:
+                    destination.rename(previous)
+            try:
+                temporary.replace(destination)
+            except BaseException:
+                if previous is not None:
+                    previous.rename(destination)
+                raise
+        finally:
+            if temporary.exists():
+                shutil.rmtree(temporary)
         reviews = self.run / 'reviews'
         reviews.mkdir(exist_ok=True)
         template = destination / 'review/review_scores.csv'

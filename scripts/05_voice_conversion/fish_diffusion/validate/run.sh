@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-export PATH="/opt/conda/bin:$PATH"
-export PYTHONPATH="${PROJECT_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}"
+source "${PROJECT_ROOT}/scripts/environment.sh"
 export PYTHONDONTWRITEBYTECODE=1
-exec /opt/conda/bin/python -m music_cover.fish_validation  "$@"
+exec "${MUSIC_COVER_BASE_PREFIX}/bin/python" -m music_cover.fish_validation  "$@"

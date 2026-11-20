@@ -177,6 +177,7 @@ class Preflight(unittest.TestCase):
             torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: True, get_device_name=lambda n: 'GPU'))
             a = check.parser().parse_args(['--scope','inference'])
             with patch.object(check,'ROOT',root), patch.dict('sys.modules',{'torch':torch}), \
+                 patch.object(check,'python_for',return_value=Path(check.sys.executable)), \
                  patch.object(check,'preflight') as dependency, patch.object(check,'check_assets',return_value={'assets':[]}) as assets:
                 result = check.check(a)
                 self.assertFalse(result['writes']); assets.assert_called_with(root, training=False)

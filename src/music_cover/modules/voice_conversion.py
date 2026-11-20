@@ -1,19 +1,28 @@
-from ..audio import decode
+from ..audio import decode, sha256
 from ..common.io import write_json
 from ..voice_candidates import candidate_seeds
 from ..voice import resolve_voice
 ID = '05_voice_conversion'
-CONTRACT_VERSION = 4
-DEFAULTS = {'timeout_seconds': 10800, 'backend': 'seed_vc', 'mode': 'zero_shot', 'voice_profile': None, 'candidate_count': 3, 'candidate_seeds': None, 'svc': {}, 'rvc': {}, 'fish': {}}
-CODE = ['audio.py', 'voice.py', 'voice_weights.py', 'voice_candidates.py', 'common/voice_profiles.py', 'common/voice_paths.py', 'backends/seed_vc.py', 'backends/seed_vc_runtime.py', 'backends/voice_candidates.py', 'backends/voice_metrics.py', 'voice_alignment.py', 'pitch_selection.py', 'pitch_validation.py', 'svc.py', 'backends/so_vits_svc.py', 'backends/svc_contentvec.py', 'rvc.py', 'backends/rvc.py', 'fish.py', 'backends/fish_diffusion.py']
+CONTRACT_VERSION = 5
+DEFAULTS = {'timeout_seconds': 10800, 'backend': 'seed_vc', 'mode': 'zero_shot', 'voice_profile': None, 'reference_policy': 'task', 'candidate_count': 3, 'candidate_seeds': None, 'svc': {}, 'rvc': {}, 'fish': {}}
+CODE = ['audio.py', 'voice.py', 'lora.py', 'voice_weights.py', 'voice_candidates.py', 'common/voice_profiles.py', 'common/voice_paths.py', 'backends/seed_vc.py', 'backends/cli.py', 'backends/seed_vc_runtime.py', 'backends/voice_candidates.py', 'backends/voice_metrics.py', 'voice_alignment.py', 'pitch_selection.py', 'pitch_validation.py', 'svc.py', 'backends/so_vits_svc.py', 'backends/svc_contentvec.py', 'rvc.py', 'backends/rvc.py', 'fish.py', 'backends/fish_diffusion.py']
 TIMELINE = {'*': 'generated_before_alignment'}
-def backends(r, c): return [c.get('backend', 'seed_vc')] + (['voice_metrics'] if c.get('mode') == 'finetuned' else [])
+def backends(r, c): return [c.get('backend', 'seed_vc')] + (['voice_metrics'] if c.get('mode') in {'finetuned', 'lora'} else [])
 def requires(r): return ['00_prepare', '04_vocal_separation']
 def inputs(ctx):
     c = {**DEFAULTS, **ctx.config[ID]}
     voice = resolve_voice(c['mode'], c['voice_profile'], ctx.root, backend=c['backend'])
     result = {'vocals': ctx.output('04_vocal_separation', 'vocals'), 'reference': ctx.output('00_prepare', 'reference'),
               'checkpoint': voice['checkpoint'], 'model_config': voice['config']}
+    if c['mode'] == 'lora':
+        from ..lora import check_reference
+        if c['reference_policy'] == 'profile':
+            result['task_reference'] = result['reference']
+            result['reference'] = voice['reference']
+        else:
+            check_reference(result['reference'], voice['reference'])
+        result['adapter'] = voice['adapter']
+        result['validation'] = voice['validation']
     if 'profile' in voice: result['profile'] = voice['profile']
     for key in ('index', 'index_manifest'):
         if key in voice: result[key] = voice[key]
@@ -41,8 +50,11 @@ def params(r, c):
         c['svc'] = validate_settings(c['svc'])
     elif c['svc']:
         raise ValueError('svc settings require the so_vits_svc backend')
-    if c['mode'] not in {'zero_shot', 'finetuned'}: raise ValueError('Invalid voice mode')
-    if c['mode'] == 'finetuned' and not c['voice_profile']: raise ValueError('finetuned requires voice_profile')
+    if c['reference_policy'] not in {'task', 'profile'}: raise ValueError('Invalid reference_policy')
+    if c['reference_policy'] == 'profile' and c['mode'] != 'lora': raise ValueError('profile reference policy requires LoRA')
+    if c['mode'] == 'lora' and c['backend'] != 'seed_vc': raise ValueError('LoRA requires seed_vc')
+    if c['mode'] not in {'zero_shot', 'finetuned', 'lora'}: raise ValueError('Invalid voice mode')
+    if c['mode'] in {'finetuned', 'lora'} and not c['voice_profile']: raise ValueError('finetuned/lora requires voice_profile')
     if c['mode'] == 'zero_shot':
         c.update(voice_profile=None, candidate_count=1, candidate_seeds=[r['seed']])
     else:
@@ -52,8 +64,9 @@ def params(r, c):
 
 def run(ctx, out, i, p):
     decode(i['vocals'], out / 'source_mono.wav', rate=44100, channels=1)
-    if p['mode'] == 'finetuned':
+    if p['mode'] in {'finetuned', 'lora'}:
         request = {**p, 'source': str(out / 'source_mono.wav'), 'reference': str(i['reference']), 'voice_profile': str(i['profile'])}
+        if 'task_reference' in i: request['task_reference_sha256'] = sha256(i['task_reference'])
         write_json(out / 'candidate_request.json', request)
         ctx.execute('seed-vc', 'convert_candidates', out, '--request', out / 'candidate_request.json')
         return {'converted': out / 'converted.wav', 'conversion': out / 'conversion.json', 'candidate_report': out / 'candidates.json'}

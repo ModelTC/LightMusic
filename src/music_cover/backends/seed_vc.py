@@ -15,10 +15,20 @@ from ..common.voice_paths import runtime_model_config
 
 def convert(args):
     voice = resolve_voice(getattr(args, 'voice_mode', 'zero_shot'), getattr(args, 'voice_profile', None))
+    adapter_arg = getattr(args, 'lora_adapter', None)
+    if adapter_arg and (not getattr(args, 'checkpoint', None) or not getattr(args, 'model_config', None) or getattr(args, 'voice_profile', None)):
+        raise ValueError('Validation adapter requires explicit base/config and no published profile')
+    if getattr(args, 'checkpoint', None) and (not getattr(args, 'model_config', None) or getattr(args, 'voice_profile', None)):
+        raise ValueError('Validation checkpoint requires config and no published profile')
     # Candidate checkpoints are accepted only by the isolated validation controller.
     if getattr(args, 'checkpoint', None):
         voice = {**voice, 'mode': 'candidate', 'checkpoint': Path(args.checkpoint).resolve(),
                  'config': Path(args.model_config).resolve()}
+    if adapter_arg:
+        voice.update(mode='lora_candidate', adapter=Path(adapter_arg).resolve())
+    if voice.get('mode') == 'lora':
+        from ..lora import check_reference
+        check_reference(args.reference, voice['reference'])
     # Keep upstream relative asset lookup intact. All changes stay inside this project.
     project = ROOT / "third_party/seed-vc"
     os.chdir(project)
@@ -53,13 +63,46 @@ def convert(args):
         return original_loader(model, optimizer, path, **kwargs)
     inference.load_checkpoint = checked_loader
     runtime_config = runtime_model_config(voice['config'], Path(args.output) / 'runtime_model_config.yml')
+    adapter_audit = None
+    hooks, calls = [], {}
+    if 'adapter' in voice:
+        from ..lora import checked_adapter
+        from modules import lora as native_lora
+        payload = checked_adapter(voice['adapter'], sha256(voice['checkpoint']))
+        if voice.get('adapter_metadata') is not None and payload['metadata'] != voice['adapter_metadata']:
+            raise ValueError('Published adapter metadata differs from the actual file')
+        original_attach = native_lora.attach_adapter
+        def audited_attach(models, config, base_hash, filename):
+            nonlocal adapter_audit
+            metadata = original_attach(models, config, base_hash, filename)
+            actual = native_lora.adapter_parameters(models)
+            if set(actual) != set(payload['adapter']) or not all(
+                    torch.equal(value.detach().cpu(), payload['adapter'][name]) for name, value in actual.items()):
+                raise ValueError('Actual loaded LoRA tensors differ from the requested adapter')
+            for name, layer in models['cfm'].named_modules():
+                if isinstance(layer, native_lora.LoRALinear):
+                    calls[name] = 0
+                    def counted(module, inputs, output, key=name): calls[key] += 1
+                    hooks.append(layer.register_forward_hook(counted))
+            adapter_audit = {'adapter_sha256': sha256(filename), 'base_sha256': base_hash,
+                'metadata': metadata, 'loaded_tensors': len(actual), 'all_tensors_exactly_matched': True}
+            return metadata
+        native_lora.attach_adapter = audited_attach
     options = argparse.Namespace(
         source=args.input, target=args.reference, output=args.output,
         diffusion_steps=args.steps, length_adjust=1.0, inference_cfg_rate=0.7,
         f0_condition=True, auto_f0_adjust=False, semi_tone_shift=0,
         checkpoint=str(voice['checkpoint']), config=str(runtime_config), fp16=True,
+        lora_adapter=str(voice['adapter']) if 'adapter' in voice else None,
     )
     inference.main(options)
+    if 'adapter' in voice:
+        if adapter_audit is None or not calls or not all(calls.values()):
+            raise ValueError('LoRA adapter was not executed at every target layer')
+        adapter_audit.update(executed_targets=len(calls), forward_calls=calls)
+        write_json(Path(args.output) / 'adapter_load.json', adapter_audit)
+        for hook in hooks: hook.remove()
+
     outputs = list(Path(args.output).glob("vc_*.wav"))
     if len(outputs) != 1:
         raise RuntimeError(f"Expected one conversion WAV, got {outputs}")
@@ -70,4 +113,5 @@ def convert(args):
         'runtime_model_config_sha256': sha256(runtime_config),
         'source_sha256': sha256(args.input), 'reference_sha256': sha256(args.reference),
         'steps': args.steps, 'seed': args.seed, 'semitones': 0, 'auto_f0_adjust': False,
-        'training_performed': False, 'reference_required': True})
+        'training_performed': False, 'reference_required': True,
+        'adapter_load': adapter_audit})

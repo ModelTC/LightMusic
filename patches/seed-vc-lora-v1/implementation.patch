@@ -1,0 +1,556 @@
+--- a/train.py
++++ b/train.py
+@@ -1,6 +1,6 @@
+ import os
+ import sys
+-os.environ['HF_HUB_CACHE'] = './checkpoints/hf_cache'
++os.environ.setdefault('HF_HUB_CACHE', './checkpoints/hf_cache')
+ import torch
+ import torch.multiprocessing as mp
+ import random
+@@ -30,10 +30,35 @@
+                  save_interval=500,
+                  max_epochs=1000,
+                  device="cuda:0",
++                 lora=False,
++                 lora_rank=16,
++                 lora_alpha=16.0,
++                 lora_dropout=0.0,
++                 lora_learning_rate=1e-4,
++                 lora_resume=None,
+                  ):
+         self.device = device
+         config = yaml.safe_load(open(config_path))
++        self.lora = lora
++        self.lora_metadata = None
++        if lora_resume and not lora:
++            raise ValueError('--lora-resume requires --lora')
++        if lora:
++            from modules.lora import validate_config, validate_svc_config
++            import math
++            validate_svc_config(config)
++            self.lora_settings = validate_config(lora_rank, lora_alpha, lora_dropout)
++            if not pretrained_ckpt_path or not os.path.isfile(pretrained_ckpt_path):
++                raise ValueError('LoRA requires an explicit existing --pretrained-ckpt base model')
++            if not math.isfinite(lora_learning_rate) or lora_learning_rate <= 0:
++                raise ValueError('LoRA learning rate must be finite and positive')
++            if steps <= 0 or save_interval <= 0 or max_epochs <= 0:
++                raise ValueError('LoRA steps, epochs and save interval must be positive')
+         self.log_dir = os.path.join(config['log_dir'], run_name)
++        if lora and not lora_resume and any(
++                glob.glob(os.path.join(self.log_dir, pattern))
++                for pattern in ('lora_*.pth', 'adapter.pth', 'ft_model.pth', 'DiT_epoch_*.pth')):
++            raise ValueError('Run already contains weights; use a new --run-name or --lora-resume')
+         os.makedirs(self.log_dir, exist_ok=True)
+         # copy config file to log dir
+         shutil.copyfile(config_path, os.path.join(self.log_dir, os.path.basename(config_path)))
+@@ -75,10 +100,6 @@
+ 
+         _ = [self.model[key].to(device) for key in self.model]
+         self.model.cfm.estimator.setup_caches(max_batch_size=batch_size, max_seq_length=8192)
+-
+-        # initialize optimizers after preparing models for compatibility with FSDP
+-        self.optimizer = build_optimizer({key: self.model[key] for key in self.model},
+-                                         lr=float(scheduler_params['base_lr']))
+ 
+         if pretrained_ckpt_path is None:
+             # find latest checkpoint
+@@ -105,9 +126,29 @@
+             assert os.path.exists(pretrained_ckpt_path), f"Pretrained checkpoint {pretrained_ckpt_path} not found"
+             latest_checkpoint = pretrained_ckpt_path
+ 
+-        if os.path.exists(latest_checkpoint):
++        if lora:
++            from modules.lora import (architecture_signature, inject_lora, load_base_weights,
++                                      make_metadata)
++            base_hash = load_base_weights(self.model, latest_checkpoint)
++            signature = architecture_signature(self.model, config)
++            targets = inject_lora(self.model, **self.lora_settings)
++            self.lora_metadata = make_metadata(self.model, base_hash, signature,
++                                               self.lora_settings, targets)
++            self.epoch, self.iters = 0, 0
++            # Feature extractors/augmentation/vocoder are never trained by LoRA.
++            for name in ('whisper_model', 'campplus_model', 'bigvgan_model',
++                         'hift_gen', 'hubert_model', 'wav2vec_model'):
++                helper = getattr(self, name, None)
++                if isinstance(helper, torch.nn.Module):
++                    helper.eval().requires_grad_(False)
++            self.tone_color_converter.model.eval().requires_grad_(False)
++            if hasattr(self.rmvpe, 'model'):
++                self.rmvpe.model.eval().requires_grad_(False)
++            print(f'LoRA: {len(targets)} Linear layers, '
++                  f'{self.lora_metadata["adapter_parameters"]:,} trainable parameters; base frozen')
++        elif os.path.exists(latest_checkpoint):
+             self.model, self.optimizer, self.epoch, self.iters = load_checkpoint(
+-                self.model, self.optimizer, latest_checkpoint,
++                self.model, None, latest_checkpoint,
+                 load_only_params=True,
+                 ignore_modules=[],
+                 is_distributed=False
+@@ -116,6 +157,60 @@
+         else:
+             self.epoch, self.iters = 0, 0
+             print("Failed to load any checkpoint, training from scratch.")
++
++        # Create optimizers AFTER base loading and adapter injection.
++        self.optimizer = build_optimizer(
++            {key: self.model[key] for key in self.model},
++            lr=lora_learning_rate if lora else float(scheduler_params['base_lr']),
++            trainable_only=lora)
++        if lora_resume:
++            self.restore_lora_checkpoint(lora_resume)
++            if self.iters >= self.max_steps:
++                raise ValueError('--max-steps must exceed the restored LoRA step')
++
++    def save_lora_checkpoint(self):
++        from modules.lora import save_adapter
++        import numpy as np
++        np_state = np.random.get_state()
++        state = {
++            'optimizer': self.optimizer.state_dict(),
++            'scheduler': self.optimizer.scheduler_state_dict(),
++            'iters': self.iters, 'epoch': self.epoch,
++            'rng': {'torch': torch.get_rng_state(), 'python': random.getstate(),
++                    'numpy': [np_state[0], np_state[1].tolist(), *np_state[2:]],
++                    'cuda': torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []},
++        }
++        for name in (f'lora_step_{self.iters:08d}.pth', 'lora_latest.pth'):
++            save_adapter(self.model, os.path.join(self.log_dir, name), self.lora_metadata, state)
++
++    def restore_lora_checkpoint(self, path):
++        from modules.lora import read_adapter, load_adapter_weights
++        import numpy as np
++        payload = read_adapter(path)
++        state = payload.get('training')
++        if not isinstance(state, dict):
++            raise ValueError('--lora-resume needs a LoRA training checkpoint (lora_latest/step), not adapter.pth')
++        load_adapter_weights(self.model, payload, self.lora_metadata)
++        # Bypass upstream's permissive restore, which catches and hides mismatches.
++        for key, destination in (('optimizer', self.optimizer.optimizers),
++                                 ('scheduler', self.optimizer.schedulers)):
++            saved = dict(state[key])
++            if set(saved) != set(destination):
++                raise ValueError(f'LoRA {key} keys mismatch')
++            for name, obj in destination.items():
++                obj.load_state_dict(saved[name])
++        self.epoch, self.iters = int(state['epoch']), int(state['iters'])
++        rng = state['rng']
++        torch.set_rng_state(rng['torch'])
++        random.setstate(rng['python'])
++        s = rng['numpy']
++        np.random.set_state((s[0], np.asarray(s[1], dtype=np.uint32), *s[2:]))
++        if rng['cuda'] and torch.cuda.is_available():
++            if len(rng['cuda']) != torch.cuda.device_count():
++                raise ValueError('Resume CUDA device count differs from the checkpoint')
++            torch.cuda.set_rng_state_all(rng['cuda'])
++        print(f'Restored LoRA step {self.iters}; DataLoader restarts the saved epoch '
++              '(mid-epoch sample order is not bitwise restored)')
+ 
+     def build_sv_model(self, device, config):
+         from modules.campplus.DTDNN import CAMPPlus
+@@ -332,17 +427,18 @@
+ 
+         self.optimizer.zero_grad()
+         loss_total.backward()
+-        torch.nn.utils.clip_grad_norm_(self.model.cfm.parameters(), 10.0)
+-        torch.nn.utils.clip_grad_norm_(self.model.length_regulator.parameters(), 10.0)
+-        self.optimizer.step('cfm')
+-        self.optimizer.step('length_regulator')
+-        self.optimizer.scheduler(key='cfm')
+-        self.optimizer.scheduler(key='length_regulator')
++        for key in self.optimizer.keys:
++            torch.nn.utils.clip_grad_norm_(
++                [p for p in self.model[key].parameters() if p.requires_grad], 10.0)
++            self.optimizer.step(key)
++            self.optimizer.scheduler(key=key)
+ 
+         return loss.detach().item()
+ 
+     def train_one_epoch(self):
+         _ = [self.model[key].train() for key in self.model]
++        if self.lora:
++            self.model.length_regulator.eval()
+         for i, batch in enumerate(tqdm(self.train_dataloader)):
+             batch = [b.to(self.device) for b in batch]
+             loss = self.train_one_step(batch)
+@@ -358,6 +454,9 @@
+                 break
+ 
+             if self.iters % self.save_interval == 0:
++                if self.lora:
++                    self.save_lora_checkpoint()
++                    continue
+                 print('Saving..')
+                 state = {
+                     'net': {key: self.model[key].state_dict() for key in self.model},
+@@ -382,11 +481,19 @@
+     def train(self):
+         self.ema_loss = 0
+         self.loss_smoothing_rate = 0.99
+-        for epoch in range(self.n_epochs):
++        for epoch in range(self.epoch if self.lora else 0, self.n_epochs):
+             self.epoch = epoch
+             self.train_one_epoch()
+             if self.iters >= self.max_steps:
+                 break
++
++        if self.lora:
++            from modules.lora import save_adapter
++            self.save_lora_checkpoint()
++            path = os.path.join(self.log_dir, 'adapter.pth')
++            save_adapter(self.model, path, self.lora_metadata)
++            print(f'Final LoRA adapter saved at {path}; base model is not duplicated')
++            return
+ 
+         print('Saving final model..')
+         state = {
+@@ -409,7 +516,13 @@
+         max_epochs=args.max_epochs,
+         save_interval=args.save_every,
+         num_workers=args.num_workers,
+-        device=args.device
++        device=args.device,
++        lora=getattr(args, 'lora', False),
++        lora_rank=getattr(args, 'lora_rank', 16),
++        lora_alpha=getattr(args, 'lora_alpha', 16.0),
++        lora_dropout=getattr(args, 'lora_dropout', 0.0),
++        lora_learning_rate=getattr(args, 'lora_learning_rate', 1e-4),
++        lora_resume=getattr(args, 'lora_resume', None),
+     )
+     trainer.train()
+     
+@@ -428,6 +541,13 @@
+     parser.add_argument('--max-epochs', type=int, default=1000)
+     parser.add_argument('--save-every', type=int, default=500)
+     parser.add_argument('--num-workers', type=int, default=0)
++    parser.add_argument('--lora', action='store_true', help='Train only V1 SVC Attention+FFN LoRA')
++    parser.add_argument('--lora-rank', type=int, default=16)
++    parser.add_argument('--lora-alpha', type=float, default=16.0)
++    parser.add_argument('--lora-dropout', type=float, default=0.0)
++    parser.add_argument('--lora-learning-rate', type=float, default=1e-4)
++    parser.add_argument('--lora-resume', type=str, default=None,
++                        help='Explicit LoRA training checkpoint (base checkpoint is still required)')
+     parser.add_argument("--gpu", type=int, help="Which GPU id to use", default=0)
+     args = parser.parse_args()
+     if torch.backends.mps.is_available():
+--- a/inference.py
++++ b/inference.py
+@@ -2,7 +2,7 @@
+ 
+ import numpy as np
+ 
+-os.environ['HF_HUB_CACHE'] = './checkpoints/hf_cache'
++os.environ.setdefault('HF_HUB_CACHE', './checkpoints/hf_cache')
+ import shutil
+ import warnings
+ import argparse
+@@ -37,6 +37,15 @@
+ def load_models(args):
+     global fp16
+     fp16 = args.fp16
++    adapter = getattr(args, 'lora_adapter', None)
++    if adapter:
++        if not args.f0_condition:
++            raise ValueError('--lora-adapter requires --f0-condition True')
++        if not args.checkpoint or not args.config:
++            raise ValueError('--lora-adapter requires explicit --checkpoint and --config for its base')
++        for path in (adapter, args.checkpoint, args.config):
++            if not os.path.isfile(path):
++                raise FileNotFoundError(path)
+     if not args.f0_condition:
+         if args.checkpoint is None:
+             dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
+@@ -68,15 +77,17 @@
+     hop_length = config["preprocess_params"]["spect_params"]["hop_length"]
+     sr = config["preprocess_params"]["sr"]
+ 
+-    # Load checkpoints
+-    model, _, _, _ = load_checkpoint(
+-        model,
+-        None,
+-        dit_checkpoint_path,
+-        load_only_params=True,
+-        ignore_modules=[],
+-        is_distributed=False,
+-    )
++    if adapter:
++        from modules.lora import attach_adapter, load_base_weights, validate_svc_config
++        validate_svc_config(config)
++        base_hash = load_base_weights(model, dit_checkpoint_path)
++        metadata = attach_adapter(model, config, base_hash, adapter)
++        print(f'Loaded LoRA adapter: {metadata["adapter_parameters"]:,} parameters')
++    else:
++        model, _, _, _ = load_checkpoint(
++            model, None, dit_checkpoint_path, load_only_params=True,
++            ignore_modules=[], is_distributed=False,
++        )
+     for key in model:
+         model[key].eval()
+         model[key].to(device)
+@@ -420,6 +431,8 @@
+     parser.add_argument("--semi-tone-shift", type=int, default=0)
+     parser.add_argument("--checkpoint", type=str, help="Path to the checkpoint file", default=None)
+     parser.add_argument("--config", type=str, help="Path to the config file", default=None)
++    parser.add_argument("--lora-adapter", type=str, default=None,
++                        help="Native adapter.pth; --checkpoint must identify its original full base")
+     parser.add_argument("--fp16", type=str2bool, default=True)
+     args = parser.parse_args()
+     main(args)
+--- a/optimizers.py
++++ b/optimizers.py
+@@ -67,10 +67,12 @@
+ 
+     return scheduler
+ 
+-def build_optimizer(model_dict, lr, type='AdamW'):
++def build_optimizer(model_dict, lr, type='AdamW', trainable_only=False):
+     optim = {}
+     for key, model in model_dict.items():
+-        model_parameters = model.parameters()
++        model_parameters = [p for p in model.parameters() if p.requires_grad] if trainable_only else list(model.parameters())
++        if trainable_only and not model_parameters:
++            continue
+         parameters_names = []
+         parameters_names.append(
+             [
+@@ -89,6 +91,8 @@
+         else:
+             raise ValueError('Unknown optimizer type: %s' % type)
+ 
++    if not optim:
++        raise ValueError('No trainable parameters for optimizer')
+     schedulers = dict([(key, torch.optim.lr_scheduler.ExponentialLR(opt, gamma=0.999996))
+                        for key, opt in optim.items()])
+ 
+@@ -117,4 +121,4 @@
+ 
+     scheduler = MinLRExponentialLR(optim, gamma=0.999996, min_lr=1e-5)
+ 
+-    return optim, scheduler
+\ No newline at end of file
++    return optim, scheduler
+--- /dev/null
++++ b/modules/lora.py
+@@ -0,0 +1,222 @@
++"""Native PyTorch LoRA for the V1 F0-conditioned singing model.
++
++Only fused attention QKV/output and the three gated-FFN projections are adapted.
++Adapter files are versioned torch tensor dictionaries, NOT PEFT checkpoints.
++"""
++import hashlib
++import json
++import math
++from pathlib import Path
++import re
++import tempfile
++
++import torch
++from torch import nn
++from torch.nn import functional as F
++
++
++FORMAT = "seed-vc-lora-v1"
++TARGET = re.compile(
++    r"estimator\.transformer\.layers\.\d+\."
++    r"(?:attention\.(?:wqkv|wo)|feed_forward\.(?:w1|w2|w3))"
++)
++
++
++def sha256_file(path):
++    digest = hashlib.sha256()
++    with open(path, "rb") as stream:
++        for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
++            digest.update(chunk)
++    return digest.hexdigest()
++
++
++def validate_config(rank=16, alpha=16.0, dropout=0.0):
++    if isinstance(rank, bool) or not isinstance(rank, int) or rank <= 0:
++        raise ValueError("LoRA rank must be a positive integer")
++    if not math.isfinite(alpha) or alpha <= 0:
++        raise ValueError("LoRA alpha must be finite and positive")
++    if not math.isfinite(dropout) or not 0 <= dropout < 1:
++        raise ValueError("LoRA dropout must be in [0, 1)")
++    return {"rank": rank, "alpha": float(alpha), "dropout": float(dropout)}
++
++
++def validate_svc_config(config):
++    params = config["model_params"]
++    if (config["preprocess_params"]["sr"] != 44100
++            or not params["DiT"].get("f0_condition")
++            or not params["length_regulator"].get("f0_condition")):
++        raise ValueError("LoRA currently requires the V1 44.1 kHz F0-conditioned SVC config")
++
++
++def architecture_signature(models, config):
++    """Bind computation settings and parameter shapes, not machine-local asset paths."""
++    p = config["model_params"]
++    core = {k: p.get(k) for k in ("dit_type", "DiT", "length_regulator", "wavenet", "reg_loss_type")}
++    core["style_dim"] = p["style_encoder"]["dim"]
++    core["speech_tokenizer_type"] = p["speech_tokenizer"]["type"]
++    core["vocoder_type"] = p["vocoder"]["type"]
++    value = {"core": core, "preprocess": config["preprocess_params"],
++             "parameters": {k: {name: list(param.shape) for name, param in net.named_parameters()}
++                            for k, net in models.items()}}
++    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
++
++
++def load_base_weights(models, path):
++    """Fail on any missing/mismatched model parameter; tolerate known unused upstream keys."""
++    payload = torch.load(path, map_location="cpu", weights_only=True)
++    if not isinstance(payload, dict) or not isinstance(payload.get("net"), dict):
++        raise ValueError("Expected a full Seed-VC base checkpoint with 'net'; not an adapter")
++    states = payload["net"]
++    filtered = {}
++    for key, net in models.items():
++        # Official V1 weights use DDP's module. prefix; mirror the upstream loader.
++        raw = states.get(key, {})
++        state = {}
++        for name, value in raw.items():
++            normalized = name[7:] if name.startswith('module.') else name
++            if normalized in state:
++                raise ValueError(f'Ambiguous base parameter after DDP normalization: {key}.{normalized}')
++            state[normalized] = value
++        bad = [name for name, param in net.named_parameters()
++               if name not in state or not isinstance(state[name], torch.Tensor)
++               or state[name].shape != param.shape]
++        if bad:
++            raise ValueError(f"Incomplete base parameters in {key}: {bad[:8]}")
++        current = net.state_dict()
++        filtered[key] = {name: value for name, value in state.items()
++                         if name in current and isinstance(value, torch.Tensor)
++                         and value.shape == current[name].shape}
++    for key, state in filtered.items():
++        models[key].load_state_dict(state, strict=False)
++    return sha256_file(path)
++
++
++class LoRALinear(nn.Module):
++    def __init__(self, base, rank=16, alpha=16.0, dropout=0.0):
++        super().__init__()
++        validate_config(rank, alpha, dropout)
++        if type(base) is not nn.Linear:
++            raise TypeError("LoRA target must be a plain nn.Linear")
++        self.base = base.requires_grad_(False)
++        self.in_features, self.out_features = base.in_features, base.out_features
++        self.rank, self.alpha, self.dropout_p = rank, float(alpha), float(dropout)
++        self.scaling = self.alpha / rank
++        self.dropout = nn.Dropout(dropout)
++        self.lora_A = nn.Parameter(base.weight.new_empty((rank, self.in_features)))
++        self.lora_B = nn.Parameter(base.weight.new_zeros((self.out_features, rank)))
++        nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
++
++    def forward(self, x):
++        return self.base(x) + F.linear(F.linear(self.dropout(x), self.lora_A), self.lora_B) * self.scaling
++
++
++def inject_lora(models, rank=16, alpha=16.0, dropout=0.0):
++    """Freeze the complete core and inject one adapter; reject accidental double injection."""
++    settings = validate_config(rank, alpha, dropout)
++    if any(isinstance(m, LoRALinear) for net in models.values() for m in net.modules()):
++        raise ValueError("LoRA is already injected; load new weights into the existing adapter")
++    cfm = models["cfm"]
++    targets = [(name, module) for name, module in cfm.named_modules() if TARGET.fullmatch(name)]
++    layers = cfm.estimator.transformer.layers
++    if len(targets) != len(layers) * 5 or any(type(m) is not nn.Linear for _, m in targets):
++        raise ValueError("Expected exactly wqkv, wo, w1, w2, w3 in every Transformer layer")
++    for net in models.values():
++        net.requires_grad_(False)
++    manifest = []
++    for name, module in targets:
++        parent_name, attr = name.rsplit(".", 1)
++        wrapper = LoRALinear(module, **settings)
++        wrapper.train(module.training)
++        setattr(cfm.get_submodule(parent_name), attr, wrapper)
++        manifest.append({"name": name, "in_features": module.in_features, "out_features": module.out_features})
++    return manifest
++
++
++def adapter_parameters(models):
++    return {f"{name}.{suffix}": getattr(layer, suffix)
++            for name, layer in models["cfm"].named_modules() if isinstance(layer, LoRALinear)
++            for suffix in ("lora_A", "lora_B")}
++
++
++def make_metadata(models, base_sha256, signature, settings, targets):
++    return {"format": FORMAT, "base_sha256": base_sha256, "architecture_signature": signature,
++            "lora": settings, "targets": targets,
++            "adapter_parameters": sum(p.numel() for p in adapter_parameters(models).values())}
++
++
++def atomic_save(payload, path):
++    path = Path(path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + ".", suffix=".tmp", delete=False) as stream:
++        temporary = Path(stream.name)
++    try:
++        torch.save(payload, temporary)
++        temporary.replace(path)
++    finally:
++        temporary.unlink(missing_ok=True)
++
++
++def save_adapter(models, path, metadata, training_state=None):
++    parameters = adapter_parameters(models)
++    if not parameters:
++        raise ValueError("No LoRA parameters to save")
++    weights = {name: p.detach().cpu().clone() for name, p in parameters.items()}
++    if not all(torch.isfinite(p).all().item() for p in weights.values()):
++        raise ValueError("Refusing to save non-finite LoRA weights")
++    payload = {"metadata": metadata, "adapter": weights}
++    if training_state is not None:
++        payload["training"] = training_state
++    atomic_save(payload, path)
++
++
++def read_adapter(path):
++    payload = torch.load(path, map_location="cpu", weights_only=True)
++    if not isinstance(payload, dict) or payload.get("metadata", {}).get("format") != FORMAT:
++        raise ValueError("Expected a seed-vc-lora-v1 adapter, not a full/PEFT checkpoint")
++    validate_config(**payload["metadata"]["lora"])
++    if not isinstance(payload.get("adapter"), dict):
++        raise ValueError("Adapter tensor dictionary is missing")
++    return payload
++
++
++def validate_adapter_identity(payload, base_sha256, signature):
++    metadata = payload["metadata"]
++    if metadata["base_sha256"] != base_sha256:
++        raise ValueError("LoRA base checkpoint SHA256 mismatch")
++    if metadata["architecture_signature"] != signature:
++        raise ValueError("LoRA model/config architecture mismatch")
++
++
++def load_adapter_weights(models, payload, expected_metadata):
++    """Validate every tensor before changing any adapter; never silently skip keys."""
++    if payload["metadata"] != expected_metadata:
++        raise ValueError("LoRA metadata/targets/settings mismatch")
++    parameters, weights = adapter_parameters(models), payload["adapter"]
++    if set(parameters) != set(weights):
++        raise ValueError("LoRA parameter keys mismatch")
++    for name, param in parameters.items():
++        value = weights[name]
++        if (not isinstance(value, torch.Tensor) or value.shape != param.shape
++                or not value.is_floating_point() or not torch.isfinite(value).all().item()):
++            raise ValueError(f"Invalid LoRA tensor: {name}")
++        if value.abs().max().item() > torch.finfo(param.dtype).max:
++            raise ValueError(f"LoRA tensor overflows destination dtype: {name}")
++    with torch.no_grad():
++        for name, param in parameters.items():
++            param.copy_(weights[name])
++
++
++def attach_adapter(models, config, base_sha256, path):
++    """Inference entry point; call after loading the full base and before moving to GPU."""
++    validate_svc_config(config)
++    payload = read_adapter(path)
++    signature = architecture_signature(models, config)
++    validate_adapter_identity(payload, base_sha256, signature)
++    settings = payload["metadata"]["lora"]
++    targets = inject_lora(models, **settings)
++    expected = make_metadata(models, base_sha256, signature, settings, targets)
++    load_adapter_weights(models, payload, expected)
++    for net in models.values():
++        net.requires_grad_(False)
++        net.eval()
++    return expected

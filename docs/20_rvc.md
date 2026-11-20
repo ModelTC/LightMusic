@@ -1,5 +1,7 @@
 # RVC：歌手训练与独立音色转换
 
+> 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
+
 RVC 是 05 的额外后端，`backend=rvc`、`mode=finetuned`。Seed-VC zero-shot、Seed-VC finetuned、so-vits-svc 的入口继续保留。RVC 推理不会启动训练，也不把参考音频当作音色条件；参考音频仍供 02 音区分析和评估使用。
 
 下文以 `/data/liuhongda/music-cover-baseline` 为命令示例。脚本按自身位置定位项目根目录，配置里的相对路径统一按项目根目录解析，不依赖某个挂载前缀或工作目录。RVC 接入已纳入 v1.0 版本，固定上游版本见仓库恢复说明。黄绮珊章节属于历史实验说明，相关 runs 已清理；当前可复现入口见下方单依纯例子。

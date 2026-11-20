@@ -1,0 +1,5 @@
+# Lightweight CPU contracts; no inference models, GPU or training dependencies.
+numpy==2.2.6
+scipy==1.15.3
+soundfile==0.13.1
+PyYAML==6.0.2

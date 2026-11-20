@@ -2,9 +2,9 @@
 
 结合原曲乐谱与参考音色的音区，确定移调幅度并输出供生成使用的乐谱。
 
-本阶段的 BS-RoFormer 分离和 RMVPE 基频提取均直接调用现有 base：`/opt/conda/bin/python`。
+本阶段的 BS-RoFormer 分离和 RMVPE 基频提取均直接调用现有 base：`envs/base/bin/python`。
 预检与实际执行使用同一路径，不需要切换或新建解释器。安装依赖见[环境说明](../../docs/03-environment.md)。
-可在本次 attempt 的 `command.json` 中检查两个 `backend_commands[].argv[0]`，应均为 `/opt/conda/bin/python`。
+可在本次 attempt 的 `command.json` 中检查两个 `backend_commands[].argv[0]`，应均为 `envs/base/bin/python`。
 
 ## 使用示例
 
@@ -15,8 +15,8 @@
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/02_pitch_adaptation/run.sh \
   --run runs/qiu_yi_nong_modular_test
@@ -79,8 +79,8 @@ bash scripts/run_baseline.sh --run runs/qiu_yi_nong_modular_test --from 02_pitch
 已有运行要启用双向分析并确认参考为歌声，可使用仅覆盖选调的配置；这不会改歌曲、歌词或风格：
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 bash scripts/02_pitch_adaptation/run.sh \
   --run runs/qiu_yi_nong_modular_test \
   --config configs/tasks/pitch_singing_auto.yaml

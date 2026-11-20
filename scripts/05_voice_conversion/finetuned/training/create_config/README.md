@@ -1,6 +1,6 @@
 # 从本次分离结果生成 Seed-VC 训练配置
 
-这是训练 00_prepare 之前的独立入口。它根据命令参数和已完成的分离清单，从空白构建一个训练 YAML；只读取公共模型结构配置来检查类型，不复制旧实验 YAML、不分离音频、不切片、不训练、不导出模型。Shell 入口直接使用 `/opt/conda/bin/python`，无需 VC_* 变量；相对路径统一按脚本所在项目的根目录解析。
+这是训练 00_prepare 之前的独立入口。它根据命令参数和已完成的分离清单，从空白构建一个训练 YAML；只读取公共模型结构配置来检查类型，不复制旧实验 YAML、不分离音频、不切片、不训练、不导出模型。Shell 入口直接使用 `envs/base/bin/python`，无需 VC_* 变量；相对路径统一按脚本所在项目的根目录解析。
 
 ## 5．生成本次训练配置
 
@@ -8,20 +8,20 @@
 
 | 输入 | 本次路径或取值 |
 |---|---|
-| 本次分离清单 | `/data/liuhongda/music-cover-baseline/data/voice_training/shan_yi_chun/manual_20261102/recordings/manifest.json`，整批须为 succeeded |
+| 本次分离清单 | `data/voice_training/shan_yi_chun/manual_20261102/recordings/manifest.json`，整批须为 succeeded |
 | 本次主唱音轨 | 同一 recordings 目录下 `<素材编号>/lead.wav` 及 `separation.json` |
-| 歌曲上游 | `/data/liuhongda/music-cover-baseline/runs/lhd_lv_zhou_shan_yi_chun_modular_test/stage_state.json` 中成功的 00_prepare、04_vocal_separation |
+| 歌曲上游 | `runs/lhd_lv_zhou_shan_yi_chun_modular_test/stage_state.json` 中成功的 00_prepare、04_vocal_separation |
 | 验证集录音编号 | `1698244260 1842315470` |
 | 测试集录音编号 | `1843079986 1864010428` |
 | 训练集 | 本次清单中未排除、且不属于上述两组的全部录音 |
 | 歌曲验证窗口 | 04 人声时间轴上的 `36:12 156:12`，即从 36 秒、156 秒各取 12 秒 |
-| 基础主权重 | `/data/liuhongda/music-cover-baseline/models/Seed-VC/DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth` |
-| 公共模型结构 YAML | `/data/liuhongda/music-cover-baseline/models/Seed-VC/config_dit_mel_seed_uvit_whisper_base_f0_44k.yml` |
+| 基础主权重 | `models/Seed-VC/DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth` |
+| 公共模型结构 YAML | `models/Seed-VC/config_dit_mel_seed_uvit_whisper_base_f0_44k.yml` |
 
 执行以下命令即可生成 YAML，不要求当前终端在项目目录：
 
 ```bash
-bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/finetuned/training/create_config/run.sh \
+bash scripts/05_voice_conversion/finetuned/training/create_config/run.sh \
   --voice-id shan_yi_chun \
   --version manual_20261102 \
   --recordings-dir data/voice_training/shan_yi_chun/manual_20261102/recordings \
@@ -38,12 +38,12 @@ bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/finetuned/
 
 只新增以下文件：
 
-`/data/liuhongda/music-cover-baseline/configs/voice_training/shan_yi_chun_seedvc_manual_20261102.yaml`
+`configs/voice_training/shan_yi_chun_seedvc_manual_20261102.yaml`
 
 查看生成内容：
 
 ```bash
-cat /data/liuhongda/music-cover-baseline/configs/voice_training/shan_yi_chun_seedvc_manual_20261102.yaml
+cat configs/voice_training/shan_yi_chun_seedvc_manual_20261102.yaml
 ```
 
 YAML 包含你本次指定的 sources 列表、每条录音的 group/split、00 的参考音频路径、公共主权重/模型结构路径、训练参数、验证歌曲与窗口，以及后续数据集和导出目录。`configuration_generation` 保存分离清单和选中上游产物的路径及 SHA256，记录生成当时的输入。项目内路径写为项目相对路径；明确传入项目外的路径保留为绝对路径。
@@ -73,12 +73,12 @@ YAML 包含你本次指定的 sources 列表、每条录音的 group/split、00 
 检查 YAML 后，执行[训练 00_prepare](../00_prepare/README.md)：
 
 ```bash
-bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/finetuned/training/00_prepare/run.sh \
+bash scripts/05_voice_conversion/finetuned/training/00_prepare/run.sh \
   --config configs/voice_training/shan_yi_chun_seedvc_manual_20261102.yaml \
   --run runs/voice_training/shan_yi_chun_seedvc_manual_20261102
 ```
 
-这一步才创建 `/data/liuhongda/music-cover-baseline/data/voice_training/shan_yi_chun/manual_20261102/dataset/manifest.json` 和 train/validation/test 切片，供训练 01 使用。它与原始分离的 recordings/manifest.json 是两份用途不同的清单。
+这一步才创建 `data/voice_training/shan_yi_chun/manual_20261102/dataset/manifest.json` 和 train/validation/test 切片，供训练 01 使用。它与原始分离的 recordings/manifest.json 是两份用途不同的清单。
 
 ## 可选覆盖参数
 

@@ -2,7 +2,9 @@
 
 仅在需要新训练 Seed-VC/SVC/RVC/Fish 人物模型时阅读。已有完整导出包可直接按 [主文件](../SKILL.md) 运行 05。训练独立于歌曲主流程，不会在执行 05 时隐式开始。
 
-所有命令从项目根目录执行，训练脚本使用 `/opt/conda/bin/python`。`my_voice`、`v001` 是示例人物和新版本标识；每次实验使用新配置、数据目录、训练 run 和导出目录。公共权重可复用，不把别人已生成的实验文件当成自己的生成步骤。
+所有命令从项目根目录执行，训练脚本使用 `envs/base/bin/python`。`my_voice`、`v001` 是示例人物和新版本标识；每次实验使用新配置、数据目录、训练 run 和导出目录。公共权重可复用，不把别人已生成的实验文件当成自己的生成步骤。
+
+LoRA 路线另见 [LoRA 参考](lora.md) 与 [13 步手册](../../docs/25_seedvc_lora_manual.md)。复用已有合格数据集时保留原划分与哈希，不强制重新切片。
 
 ## 1. 前置数据与独立目录
 
@@ -98,8 +100,8 @@ bash scripts/05_voice_conversion/finetuned/training/00_prepare/run.sh \
 ### SVC 训练、验证与导出
 
 ```bash
-/opt/conda/bin/python scripts/setup_svc.py --download --training
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope evaluation
+envs/base/bin/python scripts/setup_svc.py --download --training
+envs/base/bin/python scripts/setup/setup_voice_training.py --scope evaluation
 bash scripts/05_voice_conversion/so_vits_svc/preflight/run.sh --scope training --gpu 0
 
 bash scripts/05_voice_conversion/so_vits_svc/training/create_config/run.sh \
@@ -128,8 +130,8 @@ bash scripts/05_voice_conversion/so_vits_svc/training/03_export/run.sh \
 ### RVC 训练、索引、验证与导出
 
 ```bash
-/opt/conda/bin/python scripts/setup_rvc.py --download --training
-/opt/conda/bin/python scripts/setup/setup_voice_training.py --scope evaluation
+envs/base/bin/python scripts/setup_rvc.py --download --training
+envs/base/bin/python scripts/setup/setup_voice_training.py --scope evaluation
 bash scripts/05_voice_conversion/rvc/preflight/run.sh --scope training --gpu 0
 
 bash scripts/05_voice_conversion/rvc/training/create_config/run.sh \
@@ -209,7 +211,7 @@ bash scripts/05_voice_conversion/fish_diffusion/training/04_export/run.sh \
 
 ## 4. 回到歌曲主流程 05、06
 
-使用 [SKILL.md 的 05 命令](../SKILL.md#05-的替代命令四选一) 为本次导出的模型新建推理配置并转换整曲，再执行 06。训练 run 的 `state.json` 和歌曲 run 的 `stage_state.json` 是两套状态，不能混用。
+使用 [SKILL.md 的 05 命令](../../USAGE.md) 为本次导出的模型新建推理配置并转换整曲，再执行 06。训练 run 的 `state.json` 和歌曲 run 的 `stage_state.json` 是两套状态，不能混用。
 
 质量验收和执行成功分开记录：验收不合格仍可导出供试听，但 profile 标记 `quality_review_required`，05/06 保留音频并报告待复核。文件损坏、来源不匹配或模型根本未生成不是质量拒绝，不能跳过这些结构检查。
 

@@ -1,68 +1,64 @@
 # 音乐曲风与音色转换 baseline
 
-从原曲、歌词和参考人声生成新编曲，支持 Seed-VC 零样本/微调、so-vits-svc、RVC 和 Fish Diffusion 歌手模型，输出最终 WAV、MP3、分轨、MIDI 和评审资料。
+从原曲、歌词和参考人声生成新编曲，经音色转换与混音输出 WAV/MP3。支持 Seed-VC V1 零样本、全量微调、LoRA，以及 so-vits-svc、RVC、Fish Diffusion。
 
-当前源码版本为 **v1.2**，新增 Fish Diffusion 歌手微调、5000 步训练方案及完整手动验证指南；保留 Seed-VC 零样本/微调、SVC 和 RVC。部署请获取 v1.2 分支及其固定上游版本。交付范围与验收证据见 [交付指南](docs/21_delivery.md) 和 [验证记录](VALIDATION.md)。
+当前版本为 **v2.0**，包含 **Seed-VC V1 LoRA 训练、验证、导出和 05 推理**，以及项目内环境部署、CLI 参数检查与 GitHub CI。这里的 v2.0 是项目版本，Seed-VC 使用 V1。验证范围见 [VALIDATION](VALIDATION.md)，版本变化见 [CHANGELOG](CHANGELOG.md)。
 
-## English overview
+```bash
+git clone --branch v2.0 https://github.com/ModelTC/music-cover-baseline.git
+cd music-cover-baseline
+git submodule update --init third_party/YuE third_party/seed-vc third_party/so-vits-svc third_party/rvc
+python3 scripts/setup/apply_seed_vc_lora.py
+```
 
-Modular music restyling and voice conversion with YuE2, Seed-VC, so-vits-svc, RVC and Fish Diffusion, featuring reproducible training, staged inference, audio review and deployment guidance.
-
-Version 1.2 adds Fish Diffusion singer fine-tuning with a validated 5,000-step training recipe, shell-based configuration tools, and an end-to-end manual guide from raw recordings to converted vocals and final mixes. Seed-VC zero-shot and fine-tuned conversion, so-vits-svc, and RVC remain available. Generated audio remains available for review even when quality checks do not pass. Models and media are provisioned separately; fresh-machine deployment still requires environment validation.
+接着按下方文档部署环境和模型；Git 仓库不包含权重、录音或生成音频。
 
 ## 从哪里开始
 
-| 需要做什么 | 文档 |
+| 任务 | 文档 |
 |---|---|
-| 新使用者部署并运行 00–06 | [部署 Skill](skill/SKILL.md) |
-| 直接生成、分步检查中间文件 | [使用说明](USAGE.md) |
-| 理解整个流程与模块职责 | [当前架构](docs/01-architecture.md)、[模块化说明](docs/09_modular_pipeline.md) |
-| 准备环境与模型权重 | [环境说明](docs/03-environment.md)、[权重清单](docs/12_model_weights.md) |
-| 训练歌手模型 | [Seed-VC](docs/13_voice_adaptation.md)、[SVC](docs/18_so_vits_svc.md)、[RVC](docs/20_rvc.md)、[Fish Diffusion](docs/22_fish_diffusion.md) |
-| 从原始录音亲自验证 Fish 训练→05→06 | [手动实操与输入输出](docs/24_fish_diffusion_manual.md)、[训练优化依据](docs/23_fish_diffusion_optimization.md) |
-| 候选推荐与指标含义 | [候选说明](docs/15_voice_candidates.md)、[评估说明](docs/05-evaluation.md) |
-| 交付、回归验证、数据保留、迁移 | [交付指南](docs/21_delivery.md)、[仓库说明](docs/08-repository.md) |
+| 部署与主流程 | [部署 Skill](skill/SKILL.md)、[使用说明](USAGE.md)、[环境布局](docs/03-environment.md) |
+| 手动训练 LoRA，再运行 05→06 | [LoRA 13 步手册](docs/25_seedvc_lora_manual.md)、[入口与参数](scripts/05_voice_conversion/lora/README.md) |
+| 全量微调 / SVC / RVC / Fish | [Seed-VC](docs/13_voice_adaptation.md)、[SVC](docs/18_so_vits_svc.md)、[RVC](docs/20_rvc.md)、[Fish](docs/24_fish_diffusion_manual.md) |
+| 模型资源 | [权重清单](skill/references/weights.md) |
+| 贡献代码与 GitHub 检查 | [CONTRIBUTING](CONTRIBUTING.md)、[仓库与数据边界](docs/08-repository.md) |
 
-## 当前流程
+## 流程
 
 ```text
-00 准备音频和歌词 → 01 原曲转谱 → 02 分析音区并移调乐谱
-→ 03 YuE2 生成新曲风 → 04 分离新曲的人声与伴奏
-→ 05 Seed-VC / SVC / RVC / Fish Diffusion 换声 → 06 对齐混音（WAV + MP3）
-→ 07 成品分轨 → 08 成品转谱 → 09 各轨 MIDI
-→ 10 技术评估 → 11 发布交付目录
+00 准备 → 01 转谱 → 02 分析音区/移调 → 03 YuE2 编曲 → 04 分离
+→ 05 换声 → 06 混音 → 07 分轨 → 08 转谱 → 09 MIDI → 10 评估 → 11 交付
+
+独立音色训练：分离录音 → 训练 00_prepare → 01_train → 02_validate
+                                              → 03_export → 供主流程 05 使用
 ```
 
-05 共四种模型后端、五条使用路线：Seed-VC 零样本/微调，以及 SVC、RVC、Fish 的歌手模型。只有 Seed-VC 提供本工程的参考音频零样本路线。训练位于 05 对应后端的 `training/`，与每首歌的推理流程独立。`--no-review` 只跳过 07–09，仍执行 10–11。
+05 共四种后端、六条路线。LoRA 是 Seed-VC V1 的适配器路线，与 V2 无关；05 不会隐式启动训练。只需歌曲成品时运行到 06；`--no-review` 只跳过 07–09，仍会执行 10–11。
 
-## 已配置服务器的完整示例
+## 已部署环境的最小示例
 
-本机工程 `/data/liuhongda/music-cover-baseline` 解析到 `/mnt/afs_f/liuhongda/music-cover-baseline`。下面用现有黄绮珊 Seed-VC 微调模型，生成《穿越曙光》管弦灵魂乐；输入路径、歌词与参考片段均写在任务配置中。
+从仓库根目录开始，准备自己的歌曲、歌词、参考人声，修改示例路径和曲风：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
-bash scripts/run_baseline.sh \
-  --config configs/tasks/chuan_yue_shu_guang_huang_qi_shan_seedvc_20261029.yaml \
-  --preflight
-bash scripts/run_baseline.sh \
-  --config configs/tasks/chuan_yue_shu_guang_huang_qi_shan_seedvc_20261029.yaml \
-  --run runs/my_chuan_yue_shu_guang_seedvc --gpu 0
+export VC_ROOT="$PWD"
+source "$VC_ROOT/scripts/environment.sh"
+mkdir -p configs/local
+cp -n configs/examples/cover.yaml configs/local/my_cover.yaml
+# 先编辑 my_cover.yaml，确认三个输入文件实际存在。
+bash scripts/run_baseline.sh --config configs/local/my_cover.yaml --until 06_mix --preflight
+bash scripts/run_baseline.sh --config configs/local/my_cover.yaml --run runs/my_cover_v001 --until 06_mix --gpu 0
 ```
 
-最终音频：`runs/my_chuan_yue_shu_guang_seedvc/deliverables/final.mp3`。每阶段中间文件在 `stages/<阶段>/attempt_NNN/artifacts/`，当前有效 attempt 以 `stage_state.json` 为准。具体逐阶段命令见 [USAGE](USAGE.md)。
+首次成功混音在 `runs/my_cover_v001/stages/06_mix/attempt_001/artifacts/final.mp3`。有效 attempt 读取 `stage_state.json`，不要按最大编号猜测；只有执行 11 才生成顶层 `deliverables/`。
 
-## 项目检查
+环境、缓存、模型和数据放在项目内，不要求软链接。新机器仍需部署依赖、固定子模块和权重；源码检查通过不等于真实 GPU 推理通过。ECAPA 等指标只用于诊断，不能代替试听或作为身份准确率。
 
-```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
-/opt/conda/bin/python scripts/check_project.py --output cache/source_check.json
-PYTHONPATH=src envs/separator/bin/python -m unittest discover -s tests -v
-```
+## English overview
 
-检查语法、配置、文档链接和测试不等于 GPU 推理通过；完整验收另检查真实生成和交付文件。模型、训练数据及运行结果保存在服务器，不随源码包或 Git 提交分发。下载与迁移依赖各模型锁文件及实际环境快照，不能把现有 `envs/` 直接复制到另一台机器。
+**Music Cover Baseline v2.0** is a modular pipeline for score-guided music restyling and target-voice conversion. It combines transcription, pitch adaptation, YuE2 arrangement generation, vocal separation, voice conversion, and aligned mixing, with optional stems, MIDI, evaluation, and delivery packaging.
 
-曲风生成可能改动演唱细节，分轨与 MIDI 均为估计。ECAPA 不代表身份百分比或主观音质；技术完成后的音乐仍需人工试听和乐谱校对。
+Seed-VC V1 supports zero-shot conversion, full fine-tuning, and Attention+FFN LoRA adaptation. LoRA training is independent of song inference and includes dataset provenance checks, validation-based checkpoint selection, held-out test audits, immutable voice exports, and stage-05 loading. Additional trained-voice backends include so-vits-svc, RVC, and Fish Diffusion.
 
-Fish 的完整手动步骤见 [实操手册](docs/24_fish_diffusion_manual.md)：先分离目标人物录音，再显式创建训练 YAML，依次准备数据、提取特征、训练、验证、导出，最后创建推理配置并运行 05 和 06。只做到 06 已得到最终 WAV/MP3；整曲对比报告为可选步骤。
+The repository provides project-local runtime configuration, pinned upstream integrations, reproducible LoRA patches, a deployment skill, step-by-step CLI documentation, and CPU CI checks. Model weights, recordings, training datasets, and generated media are provisioned separately. Automated checks do not replace GPU acceptance tests or human listening. See [CONTRIBUTING](CONTRIBUTING.md) and [VALIDATION](VALIDATION.md) for verification scope.
+
+**Project v2.0 does not switch to Seed-VC V2; this release continues to use Seed-VC V1.**

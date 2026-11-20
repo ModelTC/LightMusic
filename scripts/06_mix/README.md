@@ -2,7 +2,7 @@
 
 对齐转换后的人声，匹配增益并与伴奏合成 WAV 和 MP3。
 
-本阶段独立脚本自动定位项目根目录、设置 PATH/PYTHONPATH，并直接调用现有 base 的 `/opt/conda/bin/python`。不需要手动导出模块路径或安装项目包；本阶段不加载模型权重。
+本阶段独立脚本自动定位项目根目录、设置 PATH/PYTHONPATH，并直接调用现有 base 的 `envs/base/bin/python`。不需要手动导出模块路径或安装项目包；本阶段不加载模型权重。
 
 ## 使用示例
 
@@ -13,8 +13,7 @@
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-
+# 在项目根目录执行
 bash scripts/06_mix/run.sh \
   --run runs/lhd_lv_zhou_shan_yi_chun_modular_test
 ```
@@ -74,7 +73,7 @@ bash scripts/run_baseline.sh --run runs/lhd_lv_zhou_shan_yi_chun_modular_test --
 当 05 采用 finetuned 三候选时，本阶段也保留三个版本；根目录 final 为默认输出；有合格者时采用推荐，无合格者时标记待复核。具体例子：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+# 在项目根目录执行
 bash scripts/06_mix/run.sh --run runs/lhd_candidates_example
 ```
 

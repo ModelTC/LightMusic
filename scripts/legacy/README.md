@@ -5,15 +5,15 @@
 历史目录的用法（须自行提供保留的 v0.1 运行）：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-PYTHONPATH=src /opt/conda/bin/python scripts/legacy/verify_result_v01.py \
+# 在项目根目录执行
+PYTHONPATH=src envs/base/bin/python scripts/legacy/verify_result_v01.py \
   runs/legacy_v01 --skip-asr
 ```
 
 当前模块化运行请使用只读验证：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+# 在项目根目录执行
 PYTHONPATH=src envs/separator/bin/python scripts/verify_review.py \
   runs/lhd_chuan_yue_shu_guang_orchestral_soul_huang_qi_shan_rvc_20261029 \
   --output cache/delivery_check.json

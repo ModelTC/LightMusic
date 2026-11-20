@@ -2,7 +2,7 @@
 
 完整验证 Fish 05→06，并可比较相同源人声和伴奏的其他后端结果。
 
-全部使用 `/opt/conda/bin/python`。脚本自行定位项目根目录，不依赖当前目录或 VC_* 变量。
+全部使用 `envs/base/bin/python`。脚本自行定位项目根目录，不依赖当前目录或 VC_* 变量。
 
 输入：已有歌曲 --run 与 Fish 推理 YAML。仅首次需要自动 fork 且目标不存在时，额外传已完成 00–04 的 --source-run。--compare-run 可重复，必须已完成 05/06 且 04 两条音轨哈希相同。继续已有 run 时省略 --source-run。
 

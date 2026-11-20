@@ -17,4 +17,4 @@ bash scripts/05_voice_conversion/fish_diffusion/training/00_prepare/run.sh \
   --run runs/voice_training/shan_yi_chun_fish_manual_v001
 ```
 
-输入来自本次分离的 recordings；输出 `data/voice_datasets/shan_yi_chun/fish_diffusion/manual_v001/manifest.json` 和 train/validation/test WAV。模型训练与歌曲运行使用不同 run，所有阶段使用 base `/opt/conda/bin/python`。新运行按 5000 步示例完成预热/衰减，具体配置可以调整，不要求用户逐个筛选检查点。
+输入来自本次分离的 recordings；输出 `data/voice_datasets/shan_yi_chun/fish_diffusion/manual_v001/manifest.json` 和 train/validation/test WAV。模型训练与歌曲运行使用不同 run，所有阶段使用 base `envs/base/bin/python`。新运行按 5000 步示例完成预热/衰减，具体配置可以调整，不要求用户逐个筛选检查点。

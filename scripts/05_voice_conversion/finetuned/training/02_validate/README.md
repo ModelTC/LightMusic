@@ -5,8 +5,8 @@
 ## 具体示例
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 bash scripts/05_voice_conversion/finetuned/training/02_validate/run.sh \
   --config configs/voice_training/sun_yanzi_seed_vc_smoke.yaml \
   --run runs/voice_training/sun_yanzi_seed_vc_smoke_001

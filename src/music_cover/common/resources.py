@@ -5,9 +5,9 @@ import subprocess
 from pathlib import Path
 from ..audio import sha256
 
-ENVIRONMENTS = {'fish_diffusion': '/opt/conda', 'rvc': '/opt/conda', 'so_vits_svc': '/opt/conda', 'sheetsage': 'sheetsage2', 'yue': '/opt/conda', 'separator': '/opt/conda',
-                'seed_vc': '/opt/conda', 'rmvpe': '/opt/conda', 'review_stems': 'separator',
-                'midi': 'separator', 'analysis': 'separator', 'package': 'separator', 'voice_metrics': '/opt/conda'}
+ENVIRONMENTS = {'fish_diffusion': 'base', 'rvc': 'base', 'so_vits_svc': 'base', 'sheetsage': 'sheetsage2', 'yue': 'base', 'separator': 'base',
+                'seed_vc': 'base', 'rmvpe': 'base', 'review_stems': 'separator',
+                'midi': 'separator', 'analysis': 'separator', 'package': 'separator', 'voice_metrics': 'base'}
 # Existing stage callers also use these environment names for unrelated operations.
 # Route these operations through the same resolver as preflight.
 EXECUTION_BACKENDS = {'separate': 'separator', 'pitch': 'rmvpe', 'cover': 'yue',
@@ -85,7 +85,8 @@ def signature(root, backends):
                     'seed_vc': ('third_party/seed-vc',), 'rmvpe': ('third_party/seed-vc/modules',),
                     'voice_metrics': ('third_party/seed-vc/modules',)}.get(backend, ())
         files = [p for prefix in prefixes for p in (root / prefix).rglob('*.py')
-                 if '__pycache__' not in p.parts and not p.name.startswith('._')]
+                 if '__pycache__' not in p.parts and not p.name.startswith('._')
+                 and not (backend in {'rmvpe', 'voice_metrics'} and p.name == 'lora.py')]
         entry['upstream_code'] = {str(p.relative_to(root)): sha256(p) for p in sorted(files)}
         result[backend] = entry
     return result
@@ -127,7 +128,7 @@ def preflight(root, backends=(), mp3=False):
     if missing:
         raise FileNotFoundError('Selected modules need these files:\n' + '\n'.join(missing))
     if not shutil.which('ffmpeg'):
-        raise RuntimeError('ffmpeg is not available; add /opt/conda/bin to PATH')
+        raise RuntimeError('ffmpeg is not available; source scripts/environment.sh before running')
     if not shutil.which('ffprobe'):
         raise RuntimeError('ffprobe is not available; add the FFmpeg binary directory to PATH')
     if mp3:

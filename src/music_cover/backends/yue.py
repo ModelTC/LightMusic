@@ -34,11 +34,12 @@ def cover(args):
     score_seconds = float(score.voices["Vocal"].time * 60 / score.bpm)
     with YuE2Pipeline.from_pretrained(
         str(ROOT / "models/YuE2-3B"), vae=str(ROOT / "models/YuE2-Vae"),
-        device="cuda", local_files_only=True, memory_budget_gib=80,
+        device="cuda", local_files_only=True, memory_budget_gib=args.memory_budget_gib,
     ) as pipeline:
         # Planning from an external score only tokenizes it; it performs no generation.
         plan = pipeline.plan(**request)
         budget = cover_token_budget(score_seconds, len(plan.prefix), pipeline.generation_config.context)
+        budget['memory_budget_gib'] = args.memory_budget_gib
         (Path(args.output) / "generation_budget.json").write_text(json.dumps(budget, indent=2) + "\n")
         print(f"[length] score={score_seconds:.2f}s, semantic max_tokens={budget['semantic_max_tokens']} "
               f"(audio ceiling {budget['audio_ceiling_s']:.0f}s)", flush=True)

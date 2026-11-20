@@ -11,8 +11,8 @@
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/11_delivery/run.sh \
   --run runs/qiu_yi_nong_modular_test
@@ -74,8 +74,8 @@ bash scripts/11_delivery/run.sh \
 当 05 采用 finetuned 三候选时，本阶段也保留三个版本；根目录 final 为默认输出；有合格者时采用推荐，无合格者时标记待复核。具体例子：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 bash scripts/11_delivery/run.sh --run runs/lhd_candidates_example
 ```
 

@@ -2,7 +2,7 @@
 
 由导出模型生成新的推理 YAML。
 
-全部使用 `/opt/conda/bin/python`。脚本自行定位项目根目录，不依赖当前目录或 VC_* 变量。
+全部使用 `envs/base/bin/python`。脚本自行定位项目根目录，不依赖当前目录或 VC_* 变量。
 
 输入：04_export 的 voice.json，以及显式推理参数。无需重新训练。
 
@@ -11,7 +11,7 @@
 ## 具体使用示例
 
 ```bash
-bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/fish_diffusion/create_inference_config/run.sh \
+bash scripts/05_voice_conversion/fish_diffusion/create_inference_config/run.sh \
   --voice-profile models/voices/shan_yi_chun/fish_diffusion/manual_v001/voice.json \
   --sampler-interval 10 --noise-predictor plms --seed 42
 ```

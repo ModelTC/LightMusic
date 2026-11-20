@@ -2,7 +2,7 @@
 
 用 BS-RoFormer 将 03 生成的歌曲拆成人声和伴奏，供换声与混音使用。
 
-分离后端直接调用现有 base `/opt/conda/bin/python`，与 02 使用相同的分离模型及运行环境。
+分离后端直接调用现有 base `envs/base/bin/python`，与 02 使用相同的分离模型及运行环境。
 无需激活项目 separator 环境；依赖与预检见[环境说明](../../docs/03-environment.md)。
 
 ## 使用示例
@@ -14,8 +14,8 @@
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/04_vocal_separation/run.sh \
   --run runs/qiu_yi_nong_modular_test

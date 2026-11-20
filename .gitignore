@@ -40,3 +40,9 @@ data/voice_datasets/
 
 # Local voice separation batches, manifests and training clips
 data/voice_training/
+
+# New machine-specific task/training configs belong here; publish templates in configs/examples/.
+configs/local/
+configs/*.local.*
+data/dialogue_conversion/
+docs/*.local.md

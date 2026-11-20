@@ -77,7 +77,7 @@ class SharedProfileContracts(unittest.TestCase):
 class RuntimeContracts(unittest.TestCase):
     def test_base_backends_share_existing_interpreter(self):
         for backend in ['rvc', 'so_vits_svc', 'separator', 'rmvpe', 'yue', 'seed_vc', 'voice_metrics']:
-            self.assertEqual(python_for('/project', backend), Path('/opt/conda/bin/python'))
+            self.assertEqual(python_for('/project', backend), Path('/project/envs/base/bin/python'))
 
     def test_actual_backend_commands_match_base_preflight_and_audit(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -98,8 +98,8 @@ class RuntimeContracts(unittest.TestCase):
                     runner.execute(environment, operation, root / operation)
                     self.assertEqual(run.call_args.args[0][0], str(python_for(root, backend)))
                     record = json.loads((root / 'command.json').read_text())['backend_commands'][-1]
-                    self.assertEqual(record['argv'][0], '/opt/conda/bin/python')
-                    self.assertEqual(record['environment'], '/opt/conda')
+                    self.assertEqual(record['argv'][0], str(root / 'envs/base/bin/python'))
+                    self.assertEqual(record['environment'], str(root / 'envs/base'))
 
     def test_other_operations_keep_their_existing_interpreters(self):
         from music_cover.common.resources import execution_python
@@ -117,7 +117,7 @@ class RuntimeContracts(unittest.TestCase):
             with patch('music_cover.common.resources.resource_data', return_value={}):
                 first = signature(root, ['separator', 'rmvpe'])
                 for backend in first:
-                    self.assertEqual(first[backend]['environment'], '/opt/conda')
+                    self.assertEqual(first[backend]['environment'], 'base')
                     self.assertEqual(first[backend]['installed_lock_sha256'], sha256(lock))
                 lock.write_text('audio-separator==changed\n')
                 self.assertNotEqual(first, signature(root, ['separator', 'rmvpe']))
@@ -135,7 +135,7 @@ class RuntimeContracts(unittest.TestCase):
             lock.write_text('yue2-infer==0.1.6\n')
             with patch('music_cover.common.resources.resource_data', return_value={}):
                 first = signature(root, ['yue'])
-                self.assertEqual(first['yue']['environment'], '/opt/conda')
+                self.assertEqual(first['yue']['environment'], 'base')
                 self.assertEqual(first['yue']['installed_lock_sha256'], sha256(lock))
                 (root / 'configs/yue2.installed.txt').write_text('legacy environment changed\n')
                 self.assertEqual(first, signature(root, ['yue']))
@@ -153,7 +153,7 @@ class RuntimeContracts(unittest.TestCase):
             with patch('music_cover.common.resources.resource_data', return_value={}):
                 first = signature(root, ['seed_vc', 'voice_metrics'])
                 for backend in first:
-                    self.assertEqual(first[backend]['environment'], '/opt/conda')
+                    self.assertEqual(first[backend]['environment'], 'base')
                     self.assertEqual(first[backend]['installed_lock_sha256'], sha256(lock))
                 (root / 'configs/seed-vc.installed.txt').write_text('legacy environment changed\n')
                 self.assertEqual(first, signature(root, ['seed_vc', 'voice_metrics']))

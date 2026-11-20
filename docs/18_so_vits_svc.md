@@ -1,5 +1,7 @@
 # so-vits-svc 4.1：歌手微调与转换
 
+> 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
+
 工程根目录：`/data/liuhongda/music-cover-baseline`（本机解析到 `/mnt/afs_f/liuhongda/music-cover-baseline`）。
 
 新增 `backend=so_vits_svc, mode=finetuned`；原来的 Seed-VC zero-shot / finetuned 入口继续保留。SVC 不支持参考音频零样本转换。SVC 训练不使用源歌曲伪标签，只使用目标歌手的训练录音；模型可用于多首歌曲。

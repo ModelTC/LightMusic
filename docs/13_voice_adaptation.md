@@ -1,5 +1,7 @@
 # 参考音色转换：零样本与目标音色微调
 
+> 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
+
 以下命令在项目根目录执行；本次服务器入口为 `/data/liuhongda/music-cover-baseline`。项目可以放在其他目录，配置中的相对路径统一以脚本定位的项目根目录解析。先设置 `export PATH="/opt/conda/bin:$PATH"`。05 的两个 Seed-VC 入口、训练 00–03、验证子进程和 06 混音均直接使用 `/opt/conda/bin/python`。
 
 05 阶段提供两个独立入口，输出同一种 `converted.wav`，接入原来的 06–11 阶段。旧入口 `scripts/05_voice_conversion/run.sh` 保留，旧配置默认 `zero_shot`；已有运行显式保存的模式会继续沿用。想强制使用通用模型，请用 `zero_shot/run.sh`。

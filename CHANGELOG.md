@@ -1,5 +1,25 @@
 # 版本记录
 
+## v2.0 — 2026-11-20
+
+### English release summary
+
+- Add end-to-end Seed-VC V1 LoRA adaptation: Attention+FFN rank 16, explicit training, audited checkpoint import/resume, validation/test separation, immutable exports, and stage-05 inference.
+- Reject empty CLI values and invalid validation windows before starting attempts; test audits use an already selected, hash-verified validation checkpoint.
+- Keep environments and caches inside the project and package native LoRA changes as a verified patch against the pinned Seed-VC revision.
+- Update the deployment skill and the 13-step LoRA guide; add portable task examples, source/publication checks, and lightweight GitHub Actions CI.
+- Preserve Seed-VC zero-shot/full fine-tuning, SVC, RVC, Fish Diffusion, and the staged music-generation workflow. No model weights or user audio are bundled.
+
+### 本版变更
+
+- 接入 Seed-VC V1 Attention+FFN rank 16 LoRA 的独立训练、断点恢复、验证、导出及 05→06 推理；原生修改通过固定版本补丁分发。
+- 项目环境与缓存归入项目目录，补全当前部署与六条换声路线说明。
+- 提前拒绝空 CLI 参数和缺失文件；test 只审核 validation 已选定的权重，支持自动读取同一训练身份最近一次成功选择，校验报告与权重哈希。前置错误不产生失败 attempt。
+- 配置生成增加只读 --plan、验证步数/种子参数、音频窗口边界检查。
+- 新增 LoRA 13 步手册、工作流回归、Git 索引发布检查及轻量 GitHub CI；历史环境快照保持原样。
+
+验证：301 项完整 CPU 回归、27 项轻量 CI 检查、源码/文档检查及已有 LoRA 数据和导出包的只读兼容性检查通过。另完成一轮 V1 zero-shot 00–06 整曲生成，输出 253.60 秒，并核对音频解码与下载哈希。本次发布不重新训练模型，也不宣称完成主观试听验收。详见 [VALIDATION](VALIDATION.md)。
+
 ## v1.2 — 2026-11-05
 
 ### English release summary

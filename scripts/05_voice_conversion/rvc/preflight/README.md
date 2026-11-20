@@ -1,9 +1,9 @@
 # RVC base 环境检查
 
-第 2 步；固定 base `/opt/conda/bin/python`，相对路径按项目根目录解析。配置生成器可加 `--plan` 只检查预览，已有输出不覆盖。
+第 2 步；固定 base `envs/base/bin/python`，相对路径按项目根目录解析。配置生成器可加 `--plan` 只检查预览，已有输出不覆盖。
 
 ```bash
-bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/rvc/preflight/run.sh \
+bash scripts/05_voice_conversion/rvc/preflight/run.sh \
   --scope all --gpu 0
 ```
 

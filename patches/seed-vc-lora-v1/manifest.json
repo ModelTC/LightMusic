@@ -1,0 +1,22 @@
+{
+  "base_commit": "51383efd921027683c89e5348211d93ff12ac2a8",
+  "files": {
+    "train.py": {
+      "before": "a00ef2114077907d8c77a147ea92c3320978f31cb0b769f8cf32881107f72b46",
+      "after": "e718e3ad5b774efc2d88ec7b020d577d19c283d566ed27e950cfbbfaf9d7fd0b"
+    },
+    "inference.py": {
+      "before": "58f97976804a8eb8bb4d33e73beeab792f86a5ab2ca83c1319a23da1e71e80a6",
+      "after": "f5f2aa256943dccfba283f34b9e74cbd0f727a8040b3b6a34411a27ce327b1af"
+    },
+    "optimizers.py": {
+      "before": "783ebe84984d882cc2710385a743b93aec17ce1e4d980000cedc074752cd2730",
+      "after": "911b835e26f6d83a4bf6ef2a7a85307a5af4210b9e44f42b38d698f126d00d8a"
+    },
+    "modules/lora.py": {
+      "before": null,
+      "after": "1b7478d578766c25bedb782c0fc84ef84b58091ac0d57e7b8c63e3f4ac6ba50b"
+    }
+  },
+  "patch_sha256": "59c8e0d09fa0f6de51901ff68514b4207a4d67ebdcfc51ecb20fb821ead7e793"
+}

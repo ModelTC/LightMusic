@@ -7,11 +7,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from music_cover.common.validation import verify_delivery
 from music_cover.audio import sha256
+from music_cover.common.paths import ROOT, RunPaths
 
 
 def verify(run):
     run = Path(run).resolve()
     state = json.loads((run / 'manifest.json').read_text())
+    if state.get('schema_version') == 2:
+        state = RunPaths(ROOT, run, state).restore_state()
     if state['status'] != 'completed': raise ValueError('Run has not completed')
     result = verify_delivery(run / 'deliverables', state['request'].get('review', True))
     if state.get('schema_version') == 2:

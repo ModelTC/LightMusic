@@ -2,7 +2,7 @@
 
 检查成品音频、分轨重建和 MIDI 数据，并输出供后续评审使用的技术指标。
 
-独立 `pitch` 操作直接使用 base `/opt/conda/bin/python` 提取 RMVPE 基频，与 02 一致。
+独立 `pitch` 操作直接使用 base `envs/base/bin/python` 提取 RMVPE 基频，与 02 一致。
 音频汇总评估和 ECAPA 音色评估仍使用各自既有环境；实际解释器记录在 attempt 的 `command.json`。
 
 ## 使用示例
@@ -14,8 +14,8 @@
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/10_evaluation/run.sh \
   --run runs/qiu_yi_nong_modular_test
@@ -79,8 +79,8 @@ bash scripts/run_baseline.sh --run runs/qiu_yi_nong_modular_test --from 10_evalu
 在任务配置 `modules.10_evaluation.voice_check` 设为 `true`，会增加 ECAPA 相似度和对齐后的源/转换 F0 检查，即使 transpose=0 也执行。示例：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 bash scripts/10_evaluation/run.sh \
   --run runs/lhd_bu_bai_de_ying_xiong_celtic_epic_yang_kun_finetuned_20261028
 ```

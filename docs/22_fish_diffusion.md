@@ -1,5 +1,7 @@
 # Fish Diffusion 部署、训练与 05 接入
 
+> 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
+
 本路线独立位于 `scripts/05_voice_conversion/fish_diffusion/`，后端 `fish_diffusion`、模式 `finetuned`。训练、特征、推理和评估使用 base `/opt/conda/bin/python`；不改变主流程 00–04 或其他模型的解释器。本功能随 v1.2 提供；部署前获取该版本并核对独立资产锁和兼容补丁。
 
 ## 选择操作手册

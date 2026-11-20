@@ -162,7 +162,7 @@ def main(argv=None):
     a=p.parse_args(argv);c=yaml.safe_load(path(a.config).read_text())
     if a.max_steps is not None:c['training']['max_steps']=a.max_steps
     validate_config(c)
-    if Path(sys.prefix).resolve()!=Path('/opt/conda').resolve(): raise RuntimeError('Fish training requires base /opt/conda/bin/python')
+    if Path(sys.prefix).resolve()!=(ROOT/'envs/base').resolve(): raise RuntimeError('Fish training requires base project envs/base/bin/python')
     os.environ.update(CUDA_VISIBLE_DEVICES=str(c['gpu']),WANDB_MODE='disabled',HF_HUB_OFFLINE='1')
     run=path(a.run);run.mkdir(parents=True,exist_ok=True)
     with (run/'.lock').open('a+') as lock:

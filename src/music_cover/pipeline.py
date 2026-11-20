@@ -81,7 +81,8 @@ def main():
     parser.add_argument('--review', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--preflight', action='store_true', help='只检查选中模块的依赖')
     parser.add_argument('--voice-backend', choices=['seed_vc', 'so_vits_svc', 'rvc', 'fish_diffusion'])
-    parser.add_argument('--voice-mode', choices=['zero_shot', 'finetuned'])
+    parser.add_argument('--voice-mode', choices=['zero_shot', 'finetuned', 'lora'])
+    parser.add_argument('--voice-reference-policy', choices=['task', 'profile'], help='LoRA only: explicitly use the exported reference when reusing an arrangement')
     parser.add_argument('--voice-profile', help='已导出的音色版本 voice.json，须与所选后端一致')
     parser.add_argument('--voice-candidates', type=int, help='微调推理候选数，默认 3')
     parser.add_argument('--voice-candidate-seeds', type=int, nargs='+', help='明确指定每个微调候选的随机种子')
@@ -126,6 +127,7 @@ def main():
         if set(request) - REQUEST_KEYS: parser.error(f'Unknown request keys: {sorted(set(request) - REQUEST_KEYS)}')
         voice_overrides = {key: value for key, value in {
             'backend': args.voice_backend, 'mode': args.voice_mode, 'voice_profile': args.voice_profile,
+            'reference_policy': args.voice_reference_policy,
             'candidate_count': args.voice_candidates, 'candidate_seeds': args.voice_candidate_seeds,
         }.items() if value is not None}
         configs['05_voice_conversion'] = merge_voice_config(configs['05_voice_conversion'], voice_overrides)

@@ -1,6 +1,6 @@
 # 05_voice_conversion · 转换目标音色
 
-Seed-VC、SVC、RVC、Fish 的推理、微调训练及候选评估直接使用已有 base：`/opt/conda/bin/python`，不调用 `envs/seed-vc`。
+Seed-VC、SVC、RVC、Fish 的推理、微调训练及候选评估直接使用已有 base：`envs/base/bin/python`，不调用 `envs/seed-vc`。
 依赖与环境快照见[环境说明](../../docs/03-environment.md)；不要安装上游整套 requirements 或改动其它模型的基础依赖。
 
 默认及本页原有命令为 Seed-VC；新增 SVC 歌手模型路线见文末及 [独立入口](so_vits_svc/README.md)。
@@ -19,8 +19,8 @@ Seed-VC、SVC、RVC、Fish 的推理、微调训练及候选评估直接使用�
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/05_voice_conversion/run.sh \
   --run runs/qiu_yi_nong_modular_test
@@ -83,7 +83,7 @@ Seed-VC / RVC 微调入口默认生成三个完整候选（seed=42 时为 42、4
 读取同一 run 的 04 分离人声，写入 05 的 `converted.wav`、候选指标和模型哈希，供 06 混音使用。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+# 在项目根目录执行
 bash scripts/05_voice_conversion/rvc/run.sh \
   --run runs/my_lv_zhou_huang_qi_shan_rvc \
   --config configs/voice_inference/rvc/huang_qi_shan.yaml --gpu 0
@@ -94,3 +94,8 @@ bash scripts/05_voice_conversion/rvc/run.sh \
 ## Fish Diffusion 歌手模型
 
 独立入口：[fish_diffusion](fish_diffusion/README.md)，独立训练阶段为 00_prepare→01_features→02_train→03_validate→04_export；不改变主流程 00–04。训练、推理、权重部署及完整对照命令见 [Fish 指南](../../docs/22_fish_diffusion.md)。所有 Fish 阶段使用 base Python。从原始录音亲手生成配置、模型与混音见 [13 步手册](../../docs/24_fish_diffusion_manual.md)；训练前先 create_config，最终对比报告可跳过，不影响 06 成品。
+
+
+## Seed-VC V1 LoRA
+
+LoRA 训练、导入已有 adapter、验证、导出及 05 → 06 推理见 [LoRA 使用说明](lora/README.md)。模式为 `seed_vc + lora`，训练不会由歌曲推理隐式触发。

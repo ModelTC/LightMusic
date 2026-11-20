@@ -1,0 +1,24 @@
+# Copy to configs/local/my_cover.yaml and supply real inputs.
+request:
+  name: my_cover_v001
+  song: data/raw/songs/my_song.mp3
+  lyrics: data/raw/lyrics/my_song.txt
+  reference: data/raw/references/my_voice/reference.wav
+  reference_start: 0
+  reference_duration: 20
+  transpose: auto
+  style: "pop rock, electric guitar, acoustic drums, melodic bass, expressive solo lead vocal"
+  seed: 42
+  steps: 30
+  gpu: "0"
+  review: false
+modules:
+  02_pitch_adaptation:
+    reference_kind: singing
+    auto_min_semitones: -6
+    auto_max_semitones: 6
+  03_style_generation:
+    memory_budget_gib: 64
+  05_voice_conversion:
+    backend: seed_vc
+    mode: zero_shot

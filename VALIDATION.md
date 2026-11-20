@@ -1,5 +1,26 @@
 # v1.2 发布前复核（2026-11-05）
 
+
+## v2.0 — 2026-11-20
+
+This release packages the verified H100 working tree. The scope below separates CPU checks, existing-artifact compatibility, and real GPU generation.
+
+| Check | Result | Scope |
+|---|---|---|
+| Full CPU regression | 301 tests passed | Includes native LoRA model/adapter/optimizer wiring without training steps |
+| Clean lightweight CI environment | 27 tests passed | 24 LoRA workflow tests plus 3 publication-checker tests; no Torch or model weights required |
+| Source/config/document checks | Passed | Python and Shell syntax, configuration parsing, stage entry files, local documentation links |
+| Native LoRA patch | Verified | Pinned Seed-VC commit and patch/file hashes |
+| Existing LoRA compatibility | Passed | 111 dataset clips, a completed 1,000-step adapter, exported voice profile, and unchanged protected state |
+| Real V1 zero-shot generation | Stages 00–06 passed | New arrangement and conversion using a 25-second target reference; final duration 253.5987 seconds |
+| Audio integrity | Passed | Full MP3 decode, 69 stage artifact hashes, and matching server/download hashes; no mixing warnings |
+
+The v2.0 packaging step does not retrain a model. Existing LoRA training evidence remains in local runs; user recordings and generated audio are excluded from Git. Human listening and universal fresh-machine installation are not claimed. The GitHub-hosted workflow runs after publication; the pre-publication result above was reproduced in a clean local CI environment.
+
+Raw environment fingerprints may retain historical wheel provenance and are reported separately by the publication checker; they are not portable installation requirements. They remain byte-preserved to avoid invalidating existing run identities.
+
+The sections below preserve earlier release evidence.
+
 本版纳入 Fish Diffusion 独立训练/推理、优化方案及部署文档，保留原有 Seed-VC、SVC、RVC 和 00–11 主流程。发布前对当前源码重新执行以下检查；真实歌曲证据另列在下节。
 
 | 检查 | 本次结果 |

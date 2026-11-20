@@ -12,7 +12,7 @@ from urllib.parse import unquote, urlsplit
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-TREES = ('src', 'scripts', 'tests', 'configs', 'docs', 'skill', 'patches')
+TREES = ('src', 'scripts', 'tests', 'configs', 'docs', 'skill', 'patches', '.github')
 
 
 def source_files(root):
@@ -39,7 +39,7 @@ def check(root=ROOT):
                 if result.returncode:
                     errors.append(f'{relative}: {result.stderr.strip()}')
                 counts['shell'] += 1
-            elif 'configs' in file.relative_to(root).parts and file.suffix in {'.json', '.yaml', '.yml'}:
+            elif set(file.relative_to(root).parts) & {'configs', '.github'} and file.suffix in {'.json', '.yaml', '.yml'}:
                 value = json.loads(file.read_text()) if file.suffix == '.json' else yaml.safe_load(file.read_text())
                 if not isinstance(value, (dict, list)):
                     errors.append(f'{relative}: configuration must be a mapping or list')

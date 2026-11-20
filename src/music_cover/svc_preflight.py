@@ -7,7 +7,7 @@ import subprocess
 import sys
 from .audio import sha256
 from .common.paths import ROOT
-from .common.resources import preflight
+from .common.resources import preflight, python_for
 from .svc import check_assets
 
 
@@ -23,8 +23,8 @@ def parser():
 def check(a):
     if a.gpu < 0:
         raise ValueError('gpu must be nonnegative')
-    if not Path(sys.executable).samefile('/opt/conda/bin/python'):
-        raise ValueError('Run this check with /opt/conda/bin/python')
+    if not Path(sys.executable).samefile(python_for(ROOT, 'so_vits_svc')):
+        raise ValueError('Run this check with the project envs/base/bin/python')
     os.environ['CUDA_VISIBLE_DEVICES'] = str(a.gpu)
     import torch
     if not torch.cuda.is_available():

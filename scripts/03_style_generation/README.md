@@ -2,7 +2,7 @@
 
 用 YuE2 结合移调后的旋律、歌词和目标曲风生成新编曲歌曲。
 
-实际 YuE2 后端解释器为 `/opt/conda/bin/python`（base），预检与运行使用同一路径；
+实际 YuE2 后端解释器为 `envs/base/bin/python`（base），预检与运行使用同一路径；
 不再调用 `envs/yue2/bin/python`。主控制器仍复用已有 control 环境。
 base 的最小安装与版本说明见[环境说明](../../docs/03-environment.md#yue2-直接使用-base)。
 权重仍为 `models/YuE2-3B/model.safetensors` 和 `models/YuE2-Vae/model.safetensors`。
@@ -20,8 +20,8 @@ base 的最小安装与版本说明见[环境说明](../../docs/03-environment.m
 `--run runs/...` 的 `runs` 前不要加 `/`。详细路径契约见[跨机器续跑](../../docs/09_modular_pipeline.md#路径与跨机器续跑)。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 
 bash scripts/03_style_generation/run.sh \
   --run runs/qiu_yi_nong_modular_test

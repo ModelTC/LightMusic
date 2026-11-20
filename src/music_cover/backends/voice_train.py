@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import random
+import shutil
 import sys
 from pathlib import Path
 import numpy as np
@@ -136,8 +137,10 @@ def train_voice(c, run, out, resume=False):
         target = ckpt_dir / f'step_{step:06d}.pth'
         temp = target.with_suffix('.tmp')
         torch.save(state, temp); temp.replace(target)
-        link = ckpt_dir / 'latest.tmp'
-        link.unlink(missing_ok=True); link.symlink_to(target.name); link.replace(latest)
+        latest_temp = ckpt_dir / 'latest.tmp'
+        latest_temp.unlink(missing_ok=True)
+        shutil.copy2(target, latest_temp)
+        latest_temp.replace(latest)
         return target
     while step < t['max_steps']:
         # Stateless per-step sampling makes resume independent of DataLoader iterator position.

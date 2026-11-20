@@ -1,174 +1,96 @@
-# 使用说明（v1.1 基线＋Fish Diffusion 工作树扩展）
+# 使用说明
 
-新使用者优先按[部署 Skill](skill/SKILL.md)准备自己的数据和全新配置；包含可复制的 00–06 命令、权重下载与四种模型的训练路线。Fish 新增功能尚未单独发布，需使用包含相应脚本的代码版本。
+命令从仓库根目录执行，适用于当前含 LoRA 的工作树。环境准备见 [环境说明](docs/03-environment.md)，权重见 [部署 Skill](skill/SKILL.md)。历史实验配置依赖作者的私有素材，不是开箱即用的输入。
 
-以下历史素材示例在已配置服务器执行，需要先确认对应媒体和人物模型仍存在。工程根目录为 `/data/liuhongda/music-cover-baseline`，与 `/mnt/afs_f/liuhongda/music-cover-baseline` 指向同一工程。新机器先按[环境说明](docs/03-environment.md)和[模型权重指南](docs/12_model_weights.md)恢复依赖。
-
-```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
-```
-
-## 输入、默认值和运行目录
-
-| 输入 | 本例使用的文件 |
-|---|---|
-| 源歌曲 | `data/raw/songs/chuan_yue_shu_guang_tv.mp3` |
-| 歌词 | `data/raw/lyrics/chuan_yue_shu_guang_tv.txt` |
-| 参考人声 | `data/raw/references/huang_qi_shan/reference.wav` |
-| 完整任务配置 | `configs/tasks/chuan_yue_shu_guang_huang_qi_shan_seedvc_20261029.yaml` |
-
-本例配置为黄绮珊 Seed-VC finetuned、管弦灵魂乐、参考前 20 秒、auto 选调、3 个候选。通用入口的默认值是 Seed-VC zero_shot、原调 `transpose=0`、参考前 15 秒、30 个 Seed-VC 推理步、seed=42、完整评审开启。任务文件与命令行可覆盖这些默认值；不能把本例参数当成全局默认值。
-
-参考录音须事先整理清晰，不会在 00 自动去伴奏。歌词使用 UTF-8 TXT/LRC，演唱顺序应与原曲一致。源素材不包含在 Git 中。
-
-首次使用新的 `--run`；同名目录再次执行会按输入、参数、代码和产物哈希检查缓存。`--force` 只强制重跑选中的阶段；旧 attempt 保留。不要手动改写已经成功的 `artifacts/`。
-
-## 一次执行完整流程
+## 1. 准备输入和环境
 
 ```bash
-bash scripts/run_baseline.sh \
-  --config configs/tasks/chuan_yue_shu_guang_huang_qi_shan_seedvc_20261029.yaml \
-  --preflight
-bash scripts/run_baseline.sh \
-  --config configs/tasks/chuan_yue_shu_guang_huang_qi_shan_seedvc_20261029.yaml \
-  --run runs/my_chuan_yue_shu_guang_seedvc --gpu 0
+export VC_ROOT="$PWD"
+source "$VC_ROOT/scripts/environment.sh"
+mkdir -p configs/local
+cp -n configs/examples/cover.yaml configs/local/my_cover.yaml
 ```
 
-预检不创建歌曲运行，也不启动训练。`RESULTS (completed)` 表示已发布交付目录；`RESULTS (partial)` 表示只完成选定的前半段。
+编辑 `configs/local/my_cover.yaml`，填入真实源歌、UTF-8 歌词、目标人物参考人声和曲风。参考片段 1–25 秒，时间窗必须落在音频内；歌唱音域分析使用 `reference_kind: singing`。素材分离见 [分离入口](scripts/voice_data/separate/README.md)。
 
-## 依次执行 00–11
+`configs/local/` 不提交 Git；公开模板放 `configs/examples/`。相对路径按项目根目录解析。Shell 入口加载项目内环境和缓存，无须激活系统 Conda。
 
-下面每一条命令使用同一个运行目录；首次 00 提供配置，后续读取已保存的配置。
+## 2. 主流程 00–06
 
 ```bash
-bash scripts/00_prepare/run.sh --run runs/my_chuan_yue_shu_guang_seedvc \
-  --config configs/tasks/chuan_yue_shu_guang_huang_qi_shan_seedvc_20261029.yaml --gpu 0
-bash scripts/01_source_score/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/02_pitch_adaptation/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/03_style_generation/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/04_vocal_separation/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/05_voice_conversion/finetuned/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/06_mix/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/07_stem_separation/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/08_final_score/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/09_stem_midi/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/10_evaluation/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
-bash scripts/11_delivery/run.sh --run runs/my_chuan_yue_shu_guang_seedvc
+export VC_TASK="$VC_ROOT/configs/local/my_cover.yaml"
+export VC_SONG_RUN="$VC_ROOT/runs/my_cover_v001"
+bash scripts/run_baseline.sh --config "$VC_TASK" --until 06_mix --preflight
+bash scripts/run_baseline.sh --config "$VC_TASK" --run "$VC_SONG_RUN" --until 06_mix --gpu 0
 ```
 
-下表的输出前缀统一为 `runs/my_chuan_yue_shu_guang_seedvc/stages/`，例如 `00_prepare/attempt_001/artifacts/source.wav`。`attempt_001` 是首次尝试示例；重跑后查看 `stage_state.json` 的实际路径。
+分步操作时 00 保存任务配置，后续使用同一 run：
 
-| 阶段 | 读取什么 | 在本阶段 artifacts 查看什么 |
+```bash
+bash scripts/00_prepare/run.sh --config "$VC_TASK" --run "$VC_SONG_RUN" --gpu 0
+bash scripts/01_source_score/run.sh --run "$VC_SONG_RUN" --gpu 0
+bash scripts/02_pitch_adaptation/run.sh --run "$VC_SONG_RUN" --gpu 0
+bash scripts/03_style_generation/run.sh --run "$VC_SONG_RUN" --gpu 0
+bash scripts/04_vocal_separation/run.sh --run "$VC_SONG_RUN" --gpu 0
+# 选择下一节的一条 05 命令，再执行 06。
+bash scripts/05_voice_conversion/zero_shot/run.sh --run "$VC_SONG_RUN" --gpu 0
+bash scripts/06_mix/run.sh --run "$VC_SONG_RUN" --gpu 0
+```
+
+仅准备训练评估用的新编曲，统一入口用 `--until 04_vocal_separation`。00–04 不训练音色，也不保证 03 的声线已经是目标人物。
+
+## 3. 05 的六条路线
+
+| 路线 | 入口（相对 scripts/05_voice_conversion） | 额外条件 |
 |---|---|---|
-| 00_prepare | 原曲、歌词、参考录音 | `source.wav`、`reference.wav`、`lyrics.txt` |
-| 01_source_score | 00 的 source | `score.abc`、`events.json`、MIDI |
-| 02_pitch_adaptation | 01 的 score；00 的音频 | `transposition.json`、`score_original.abc`、`score_transposed.abc`；启用分析时另有音区报告与 `score_transposed.mid` |
-| 03_style_generation | 02 的 score；00 的歌词；任务曲风 | `generated/audio.flac`、`generation_budget.json` |
-| 04_vocal_separation | 03 的生成歌曲 | `vocals.wav`、`instrumental.wav` |
-| 05_voice_conversion | 04 的人声；模型/参考输入 | `converted.wav`、`conversion.json`；微调另有 `candidates.json` |
-| 06_mix | 03 时长；04 人声/伴奏；05 转换人声 | `final.wav`、`final.mp3`、`mix.json`、候选混音 |
-| 07_stem_separation | 06 的混音组件 | 主唱、背景人声、乐器估计及 `stems.json` |
-| 08_final_score | 06 的成品 | 成品 ABC、MIDI、节拍、和弦等 |
-| 09_stem_midi | 07 的各轨；08 的和弦 | `midi/`、`notes/`、`midi.json` |
-| 10_evaluation | 上游音频/分轨/MIDI及音高记录 | `evaluation.json`、可选音高/音色诊断 |
-| 11_delivery | 全部选定产物和检查结果 | `listen.html`、`final.mp3`、`review/` 等；通过后发布为顶层 deliverables |
+| Seed-VC 零样本 | `zero_shot/run.sh` | 公共模型 + 任务参考 |
+| Seed-VC 全量微调 | `finetuned/run.sh` | `seed_vc/<版本>/voice.json` |
+| Seed-VC V1 LoRA | `lora/run.sh` | `seed_vc_lora/<版本>/voice.json` + 匹配底模/原生补丁 |
+| so-vits-svc | `so_vits_svc/run.sh` | 人物导出模型 |
+| RVC | `rvc/run.sh` | 人物模型 + 索引 |
+| Fish Diffusion | `fish_diffusion/run.sh` | 人物扩散模型 |
 
-每个阶段同级的 `inputs.json`、`config.json`、`command.json`、`process.log`、`checks.json`、`outputs.json` 保存来源与执行证据。单阶段不自动补跑缺失或失效的上游。
-
-## 只生成音频、续跑和重跑
+LoRA 训练与导出按 [13 步手册](docs/25_seedvc_lora_manual.md) 操作；已有导出包直接推理：
 
 ```bash
-# 只做到混音，直接试听 06 的 final.mp3
-bash scripts/run_baseline.sh --run runs/my_chuan_yue_shu_guang_seedvc --until 06_mix
-# 继续完成分轨、MIDI、评估和交付
-bash scripts/run_baseline.sh --run runs/my_chuan_yue_shu_guang_seedvc --from 07_stem_separation
-# 只重新转各轨 MIDI，再更新下游交付
-bash scripts/09_stem_midi/run.sh --run runs/my_chuan_yue_shu_guang_seedvc --force
-bash scripts/run_baseline.sh --run runs/my_chuan_yue_shu_guang_seedvc --from 10_evaluation
-# 检查运行状态
-bash scripts/run_baseline.sh --run runs/my_chuan_yue_shu_guang_seedvc --status
+export VC_PROFILE="$VC_ROOT/models/voices/my_voice/seed_vc_lora/r16_v001/voice.json"
+bash scripts/05_voice_conversion/lora/run.sh \
+  --run "$VC_SONG_RUN" --voice-profile "$VC_PROFILE" \
+  --voice-candidates 1 --voice-candidate-seeds 42 --gpu 0 --preflight
+bash scripts/05_voice_conversion/lora/run.sh \
+  --run "$VC_SONG_RUN" --voice-profile "$VC_PROFILE" \
+  --voice-candidates 1 --voice-candidate-seeds 42 --gpu 0
+bash scripts/06_mix/run.sh --run "$VC_SONG_RUN" --gpu 0
 ```
 
-如果新任务不需要分轨和 MIDI，可在首次完整命令加 `--no-review`；仍执行 10–11，并交付 WAV/MP3。当前工程没有自动歌词检测、歌词门禁或静音修复。
+LoRA 默认要求任务参考和导出包参考解码后的 PCM 一致。若明确借用另一人物的编曲，使用 `--voice-reference-policy profile` 采用导出包绑定的参考，并保留原任务元信息。全量微调用 `finetuned/run.sh` 和对应 profile；SVC/RVC/Fish 参数见各自 README。
 
-## 四种模型、五条音色入口
-
-| 路线 | 独立入口（位于 scripts/05_voice_conversion） | 使用条件 |
-|---|---|---|
-| Seed-VC 零样本 | `zero_shot/run.sh` | 通用预训练权重 + 参考片段，1 次推理 |
-| Seed-VC 微调 | `finetuned/run.sh` | 已导出 Seed-VC voice.json + 参考片段，默认 3 候选 |
-| so-vits-svc | `so_vits_svc/run.sh` | 已导出 SVC voice.json，1 候选 |
-| RVC | `rvc/run.sh` | 已导出 RVC voice.json 与训练集索引，默认 3 候选 |
-| Fish Diffusion | `fish_diffusion/run.sh` | 已导出 Fish voice.json，当前 1 候选；不支持参考音频零样本 |
-
-SVC/RVC/Fish 推理不把参考人声作为音色条件；主流程仍需要参考文件供 02 音区分析和评估。训练是单独操作，不会由 05 隐式启动。
-
-公平比较时先引用同一份已完成的 00–04。下面源运行是历史示例，运行前须检查是否仍存在；克隆源码后需要自行生成上游。当前单依纯＋绿洲实例见 [Fish 手动实操](docs/24_fish_diffusion_manual.md)。
+多路线比较先 fork：
 
 ```bash
 bash scripts/05_voice_conversion/fork_run.sh \
-  --source-run runs/lhd_chuan_yue_shu_guang_orchestral_soul_huang_qi_shan_seedvc_20261029 \
-  --run runs/my_chuan_yue_shu_guang_rvc
-bash scripts/05_voice_conversion/rvc/run.sh \
-  --run runs/my_chuan_yue_shu_guang_rvc \
-  --config configs/voice_inference/rvc/huang_qi_shan.yaml --gpu 0
-bash scripts/run_baseline.sh --run runs/my_chuan_yue_shu_guang_rvc --from 06_mix --gpu 0
+  --source-run "$VC_SONG_RUN" --run runs/my_cover_lora_v001
 ```
 
-RVC 项目预设为 `index_rate=0.5, protect=0.33`。官方单次推理检索比例 0.75 另有显式预设 `configs/voice_inference/rvc/huang_qi_shan_index075.yaml`，可替换上面的 `--config`；不修改现有模型档案或全局默认值。详见 [RVC 指南](docs/20_rvc.md)。
+fork 引用经校验的 00–04 文件，必须保留源 run。真正独立的新人物任务从新的 00 执行到 04。
 
-Seed-VC 零样本的同编曲对照：
+## 4. 训练、validation 与 test
+
+`01_train` 更新 LoRA；`02_validate --evaluation-split validation` 选择 checkpoint；`02_validate --evaluation-split test` 仅审核同一训练身份中已被 validation 选中的一个 checkpoint。
+
+test 可省略 `--checkpoint`，自动读取最近一次成功且哈希完整的 validation 选择。不要传空的 `"$VC_CKPT"`；未验证时先运行 validation。继续训练产生新权重后，应重新 validation，不能用旧选择证明新权重已经验证。详细命令见 [手册第 8–10 步](docs/25_seedvc_lora_manual.md)。
+
+## 5. 产物、重跑与故障定位
 
 ```bash
-bash scripts/05_voice_conversion/fork_run.sh \
-  --source-run runs/lhd_chuan_yue_shu_guang_orchestral_soul_huang_qi_shan_seedvc_20261029 \
-  --run runs/my_chuan_yue_shu_guang_zero_shot
-bash scripts/05_voice_conversion/zero_shot/run.sh --run runs/my_chuan_yue_shu_guang_zero_shot --gpu 0
-bash scripts/run_baseline.sh --run runs/my_chuan_yue_shu_guang_zero_shot --from 06_mix --gpu 0
+bash scripts/run_baseline.sh --run "$VC_SONG_RUN" --status
 ```
 
-杨坤 SVC 优化版例子：
+- 主流程状态：`stage_state.json`；训练状态：`state.json`。
+- attempt 内有 `command.json`、`process.log`、`outputs.json`，失败时有 `failure.json`。
+- 04 输出 `vocals.wav`、`instrumental.wav`；05 输出 `converted.wav` 和候选报告；06 输出 `final.wav`、`final.mp3`、`mix.json`。
+- 主流程 `--force` 创建新 attempt，保留旧文件；不要改写已封存产物。
+- 复制试听文件时核对源 SHA256、profile、模型模式与目标音色，防止同名文件串版。
+- 评分不合格和执行失败不同，候选推荐不代表人工试听通过。
 
-```bash
-bash scripts/05_voice_conversion/fork_run.sh \
-  --source-run runs/lhd_yang_kun_svc_optimized_validation_20261028 \
-  --run runs/my_yang_kun_svc
-bash scripts/05_voice_conversion/so_vits_svc/run.sh \
-  --run runs/my_yang_kun_svc \
-  --config configs/voice_inference/so_vits_svc/yang_kun_optimized.yaml --gpu 0
-bash scripts/run_baseline.sh --run runs/my_yang_kun_svc --from 06_mix --gpu 0
-```
-
-fork 引用原来的文件并校验哈希，必须保留源 run。切换后端时自动清除旧后端的私有参数、旧 voice_profile 和候选种子，新的参数应通过配置显式提供。显式传入不兼容参数仍会报错。
-
-## 训练和选调
-
-训练路径与中间产物详见 [Seed-VC 手册](docs/13_voice_adaptation.md)、[SVC 手册](docs/18_so_vits_svc.md)、[RVC 手册](docs/20_rvc.md)、[Fish 手动实操](docs/24_fish_diffusion_manual.md)。模型版本、训练 run 和派生数据目录分别命名，已有导出版本不可覆盖。训练步数与 Seed-VC 的推理 `--steps` 无关；SVC/RVC 当前标准路线不使用扩散推理步数；Fish 使用其推理 YAML 中的 `sampler_interval`/`noise_predictor`，不读取 Seed-VC 的 `steps` 作为扩散参数。
-
-`--transpose auto` 默认搜索 -6～+6 半音，只有 `reference_kind: singing` 等条件满足才自动采用非零建议；未知/讲话参考可能推荐非零但实际保持 0。`--transpose -2` 明确降两半音。02 调整乐谱，03 据此生成，05 保留新歌 F0，不重复移调。详见 [双向选调说明](docs/10_bidirectional_pitch.md)。
-
-## 最终文件与验收
-
-完整交付在 `runs/<运行目录>/deliverables/`：
-
-- `final.wav`：48 kHz 立体声 24-bit；`final.mp3`：48 kHz 立体声 192 kbps。
-- `listen.html`、`original.wav`、`reference.wav`、`restyled.flac`、`vocals_before.wav`、`vocals_after.wav`：试听与过程对照。
-- 微调候选由 `candidates.json` / `candidates.html` 说明；分轨和 MIDI 对应默认输出；有合格候选时优先采用推荐，无合格者时保留待复核标记。
-- `review/audio/`、`review/midi/`、`review/notes/`、`review/index.html`：专业评审资料。
-- `report.md`、`checks.json`、`review/manifest.json`：技术检查与来源。
-
-分轨、和声和 MIDI 是估计；音轨相加只使用 `stems.json` 的叶轨，不重复叠加父轨。MIDI 的 120 BPM 是保存绝对时间的刻度，不声称原曲速度为 120 BPM。ECAPA、F0 和自动检查不能替代听感与乐谱校对。
-
-```bash
-PYTHONPATH=src envs/separator/bin/python scripts/verify_review.py \
-  runs/my_chuan_yue_shu_guang_seedvc --output cache/my_delivery_check.json
-```
-
-该命令检查成品与所有阶段文件的哈希、音频、MIDI、打包和链接。不要把检查报告写进已发布的 artifacts。完整交付清单与数据保留规则见 [交付指南](docs/21_delivery.md)。
-
-## Fish Diffusion 独立换声路线
-
-先读 [部署与模型说明](docs/22_fish_diffusion.md)，再按 [13 步手动实操](docs/24_fish_diffusion_manual.md)从原始录音生成全新配置、数据、特征和模型。第 4 步 `create_config` 创建 YAML；第 5 步训练 `00_prepare` 只读取它，不能跳过第 4 步。每个参数路径是否必须已有、在哪一步创建，均在手册表中列明。
-
-完成 05、06 就得到歌曲 run 的 `stages/06_mix/attempt_*/artifacts/final.wav` / `final.mp3`。第 13 步跨模型对比是可选的，不影响前面的训练、导出和混音。训练状态看训练 run 的 `state.json`，歌曲状态看 `stage_state.json`；fork 引用的原 00–04 目录必须保留。
+维护检查见 [CONTRIBUTING](CONTRIBUTING.md)。

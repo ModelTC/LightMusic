@@ -1,6 +1,6 @@
 # 05 · zero_shot
 
-Seed-VC 推理、微调训练及候选评估直接使用已有 base：`/opt/conda/bin/python`，不调用 `envs/seed-vc`。
+Seed-VC 推理、微调训练及候选评估直接使用已有 base：`envs/base/bin/python`，不调用 `envs/seed-vc`。
 依赖与环境快照见[环境说明](../../../docs/03-environment.md)；不要安装上游整套 requirements 或改动其它模型的基础依赖。
 
 本例的 `runs/lhd_test_modular` 是可新建的运行名，旧数据已清理。先按 [三候选指南](../../../docs/15_voice_candidates.md) 完成 00–04（使用同一个 --run），或运行下面的准备命令；不能直接使用已删除的上游。
@@ -10,8 +10,8 @@ Seed-VC 推理、微调训练及候选评估直接使用已有 base：`/opt/cond
 ## 具体示例
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
-export PATH="/opt/conda/bin:$PATH"
+# 在项目根目录执行
+source scripts/environment.sh
 bash scripts/run_baseline.sh \
   --config configs/tasks/qiu_yi_nong_bossa_nova_sun_yanzi.yaml \
   --run runs/lhd_test_modular --until 04_vocal_separation

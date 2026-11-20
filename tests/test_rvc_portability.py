@@ -106,8 +106,8 @@ class Metadata(unittest.TestCase):
         self.assertEqual(len(scripts),8)
         for file in scripts:
             text=file.read_text()
-            self.assertIn('/opt/conda/bin/python',text)
-            self.assertIn('export PATH="/opt/conda/bin:$PATH"',text)
+            self.assertIn('${MUSIC_COVER_BASE_PREFIX}/bin/python',text)
+            self.assertIn('source "${PROJECT_ROOT}/scripts/environment.sh"',text)
             self.assertNotIn('run_baseline.sh',text)
             self.assertNotIn('/envs/',text)
 

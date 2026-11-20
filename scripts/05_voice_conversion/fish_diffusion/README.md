@@ -2,7 +2,7 @@
 
 只执行主流程 05 音色转换。
 
-全部使用 `/opt/conda/bin/python`。脚本自行定位项目根目录，不依赖当前目录或 VC_* 变量。
+全部使用 `envs/base/bin/python`。脚本自行定位项目根目录，不依赖当前目录或 VC_* 变量。
 
 输入：当前歌曲 run 的 00/04 成功产物、Fish 推理 YAML 和 voice.json。00 参考音频仅用于评估，歌手音色来自训练权重；05 额外移调固定为 0。
 
@@ -11,7 +11,7 @@
 ## 具体使用示例
 
 ```bash
-bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/fish_diffusion/run.sh \
+bash scripts/05_voice_conversion/fish_diffusion/run.sh \
   --run runs/lhd_lv_zhou_shan_yi_chun_fish_manual_v001 \
   --config configs/voice_inference/fish_diffusion/shan_yi_chun_manual_v001.yaml --gpu 0
 ```
@@ -19,7 +19,7 @@ bash /data/liuhongda/music-cover-baseline/scripts/05_voice_conversion/fish_diffu
 首次需先运行 00–04，或用已有 `fork_run.sh` 创建独立运行。完成后混音：
 
 ```bash
-bash /data/liuhongda/music-cover-baseline/scripts/06_mix/run.sh \
+bash scripts/06_mix/run.sh \
   --run runs/lhd_lv_zhou_shan_yi_chun_fish_manual_v001 \
   --config configs/voice_inference/fish_diffusion/shan_yi_chun_manual_v001.yaml --gpu 0
 ```
