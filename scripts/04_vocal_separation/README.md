@@ -1,6 +1,6 @@
 # 04_vocal_separation · 分离生成歌曲的人声和伴奏
 
-用 BS-RoFormer 将 03 生成的歌曲拆成人声和伴奏，供换声与混音使用。
+先用 BS-RoFormer 拆分总人声和纯乐器，再以 anvuew 与 Frazer 两个 Karaoke 模型的等权平均波形估计主唱。伴唱取总人声减主唱。
 
 分离后端直接调用现有 base `envs/base/bin/python`，与 02 使用相同的分离模型及运行环境。
 无需激活项目 separator 环境；依赖与预检见[环境说明](../../docs/03-environment.md)。
@@ -21,7 +21,7 @@ bash scripts/04_vocal_separation/run.sh \
   --run runs/qiu_yi_nong_modular_test
 ```
 
-这里分离的是 03 生成的歌曲。02 中用于音区分析的原曲人声属于另一条时间轴，不作为本模块的输入。
+默认分离 03 生成的歌曲。02 中用于音区分析的原曲人声属于另一条时间轴，仅在原编曲模式下可复用。
 
 ## 读取哪些输入
 
@@ -37,7 +37,9 @@ bash scripts/04_vocal_separation/run.sh \
 
 | 文件 / 目录 | 内容及下游用途 |
 | --- | --- |
-| `vocals.wav` | 换声前人声；供 05、06、10 使用 |
+| `vocals.wav` | 第一级分出的总人声（生成模式） |
+| `lead.wav`、`backing.wav` | 原调主唱与伴唱；05 通过 `vocals` 角色获取最终调性的主唱 |
+| `mix_bed.wav` | 供 06 混音的伴唱加乐器底轨 |
 | `instrumental.wav` | 伴奏；供 06 混音、07 乐器分轨 |
 | `separation_input.wav` | 本模块实际使用的分离输入 |
 

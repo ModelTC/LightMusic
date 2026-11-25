@@ -11,7 +11,8 @@ CODE = ['voice_candidates.py', 'audio.py', 'common/delivery.py', 'common/validat
 TIMELINE = {'*': 'see source artifact timeline'}
 def backends(r, c): return ['package'] if r['review'] else []
 def requires(r):
-    return ['00_prepare', '01_source_score', '02_pitch_adaptation', '03_style_generation', '04_vocal_separation', '06_mix', '10_evaluation'] + (['07_stem_separation', '08_final_score', '09_stem_midi'] if r['review'] else [])
+    generation = [] if r.get('arrangement') == 'original' else ['03_style_generation']
+    return ['00_prepare', '01_source_score', '02_pitch_adaptation', *generation, '04_vocal_separation', '06_mix', '10_evaluation'] + (['07_stem_separation', '08_final_score', '09_stem_midi'] if r['review'] else [])
 def inputs(ctx):
     result = {}
     for stage in requires(ctx.request):
@@ -73,7 +74,10 @@ def run(ctx, out, i, p):
         with (out / 'report.md').open('a') as stream:
             stream.write('\n微调候选对比：candidates.html；推荐：' + (report.get('recommended_id') or '无合格候选') + '；默认输出：' + (report.get('selected_id',report.get('recommended_id')) or '无') + '。未获推荐的默认输出需要人工确认。指标取自 05 转换后干声；后续分轨、MIDI 对应默认输出版本。\n')
     shutil.copyfile(evaluation['evaluation.json'], out / 'evaluation.json')
-    for key in ['vocal_post_gain', 'instrumental_post_gain', 'residual']:
+    post_gain_roles = ['vocal_post_gain', 'instrumental_post_gain', 'residual']
+    if 'backing_post_gain' in mixed:
+        post_gain_roles.append('backing_post_gain')
+    for key in post_gain_roles:
         shutil.copyfile(mixed[key], out / mixed[key].name)
     write_json(out / 'config.resolved.json', {'request': ctx.paths.request(ctx.request, portable=True), 'modules': ctx.config})
     request_file = out / 'validation_request.json'

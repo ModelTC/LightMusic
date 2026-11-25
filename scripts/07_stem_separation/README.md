@@ -1,6 +1,6 @@
 # 07_stem_separation · 生成供评审的成品分轨
 
-继续拆分转换后人声与伴奏，生成同起点、同长度的主唱、背景人声及乐器评审音轨。
+读取 06 的对齐主唱和保留伴唱，用 Demucs 拆分纯乐器伴奏，生成同起点、同长度的评审分轨。
 
 ## 使用示例
 
@@ -38,8 +38,8 @@ bash scripts/07_stem_separation/run.sh \
 | 文件 / 目录 | 内容及下游用途 |
 | --- | --- |
 | `stems.json` | 轨道清单与相加规则；供 09、10、11 使用 |
-| `audio/lead_vocals.wav` | 主唱音轨 |
-| `audio/backing_vocals.wav` | 背景人声 / 和声音轨 |
+| `audio/lead_vocals.wav` | 换声后的主唱 |
+| `audio/backing_vocals.wav` | 来自 04、按混音总增益保留的原音色伴唱 |
 | `audio/drums.wav` | 鼓音轨 |
 | `audio/bass.wav` | 贝斯音轨 |
 | `audio/guitar.wav` | 吉他音轨 |

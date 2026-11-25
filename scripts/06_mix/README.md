@@ -29,8 +29,8 @@ bash scripts/06_mix/run.sh \
 | 上游模块 | 中间产物路径 | 本模块用途 |
 | --- | --- | --- |
 | `03_style_generation` | `03_style_generation/attempt_001/artifacts/generated/audio.flac` | 生成歌曲的长度及音频对照 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/vocals.wav` | 换声前人声，用于对齐与增益参考 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/instrumental.wav` | 待混入的伴奏 |
+| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/lead.wav` | 换声前人声，用于对齐与增益参考 |
+| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/instrumental.wav` | 纯乐器输入，另读 `backing` 与 `mix_bed` 角色用于保留伴唱和回混 |
 | `05_voice_conversion` | `05_voice_conversion/attempt_001/artifacts/converted.wav` | 转换后人声 |
 
 ## 本模块输出
@@ -44,9 +44,10 @@ bash scripts/06_mix/run.sh \
 | `converted_aligned.wav` | 对齐后人声；供 07 和可选的 10 音高检查 |
 | `mix.json` | 对齐、增益及音频指标；供 07、10、11 使用 |
 | `reconstruction.wav` | 换声前人声与伴奏的重混对照 |
-| `vocal_post_gain.wav` | 实际混入的增益后人声 |
-| `instrumental_post_gain.wav` | 实际混入的增益后伴奏 |
-| `mix_residual.wav` | 最终混音与上述两项之和的数值残差 |
+| `vocal_post_gain.wav` | 增益后的换声主唱 |
+| `instrumental_post_gain.wav` | 增益后的纯乐器伴奏 |
+| `backing_post_gain.wav` | 增益后的原音色伴唱 |
+| `mix_residual.wav` | 最终混音与上述三项之和的数值残差 |
 
 ## 查看记录与重跑
 

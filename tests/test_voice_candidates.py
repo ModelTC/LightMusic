@@ -113,6 +113,31 @@ class MixDeliveryTests(unittest.TestCase):
         self.assertEqual(sha256(target/'final.mp3'),sha256(target/selected['final_mp3']))
         self.assertIn('candidates.html',(target/'listen.html').read_text())
         self.assertEqual(len(list((target/'candidates').rglob('final.mp3'))),3)
+    def test_retained_harmony_and_pure_instruments_stay_separate_at_delivery(self):
+        from music_cover.common.delivery import build_delivery
+        from music_cover.common.validation import verify_delivery
+        instrument, rate = sf.read(self.i['instrumental'], dtype='float32')
+        harmony = instrument[:, ::-1] * .5
+        sf.write(self.raw/'harmony.wav', harmony, rate, subtype='FLOAT')
+        sf.write(self.raw/'bed.wav', instrument + harmony, rate, subtype='FLOAT')
+        inputs = dict(self.i, backing=self.raw/'harmony.wav', mix_bed=self.raw/'bed.wav')
+        mixed = mix.run(None, self.out, inputs, mix.DEFAULTS)
+        delivery_dir = self.root/'result'
+        source = self.i['cover']
+        build_delivery(delivery_dir, {'arrangement':'original','style':'','song':str(source)}, {},
+                       {'source':source,'reference':source}, {},
+                       {'vocals':self.i['vocals'],'backing':inputs['backing'],
+                        'instrumental':inputs['instrumental'],'cover':source}, mixed)
+        import shutil
+        for role in ('vocal_post_gain','instrumental_post_gain','backing_post_gain','residual'):
+            shutil.copyfile(mixed[role], delivery_dir/mixed[role].name)
+        self.assertTrue(verify_delivery(delivery_dir, review=False)['post_gain_roles_verified'])
+        self.assertEqual(sha256(delivery_dir/'instrumental.wav'),sha256(inputs['instrumental']))
+        self.assertEqual(sha256(delivery_dir/'transposed_original.wav'),sha256(source))
+        shutil.copyfile(inputs['mix_bed'], delivery_dir/'instrumental.wav')
+        with self.assertRaisesRegex(ValueError,'instrumental differs'):
+            verify_delivery(delivery_dir, review=False)
+
     def test_mismatched_recommendation_is_rejected(self):
         self.report['recommended_id']='candidate_001';write_json(self.raw/'candidates.json',self.report)
         with self.assertRaisesRegex(ValueError,'recommendation'):mix.run(None,self.out,self.i,mix.DEFAULTS)

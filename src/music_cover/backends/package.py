@@ -82,6 +82,7 @@ def build_review_package(request, output):
             for criterion in ["音高准确性", "起止时刻准确性", "漏音与多余音符"]:
                 writer.writerow(["", spec["file"], criterion, "", "", "", "", ""])
 
+    cover_name = "transposed_original.wav" if request["run_request"].get("arrangement") == "original" else "restyled.flac"
     report = ("专业评审数据包\n\n"
               "所有 review/audio 轨道均来自换声后的最终混音，48 kHz、立体声、32-bit float，同起点同长度。\n"
               "主唱/和声与各乐器是模型分离估计，可能有串音；背景人声残差可包含混响，不能据此断言有独立和声演唱。\n"
@@ -93,7 +94,7 @@ def build_review_package(request, output):
               "原始模型 MIDI（含可用的弯音）在 raw_midi，音符 CSV 在 notes，模型激活在 activations。\n"
               "final_transcription 含成品的和弦、调性、拍点、段落估计；source_transcription 仅为输入原曲对照。\n"
               "MIDI 无人声音色；不能代替音频评判孙燕姿音色。\n\n"
-              "先对比 original.wav、restyled.flac、final.wav 与 reference.wav，再逐轨听音并核对 MIDI。\n"
+              f"先对比 original.wav、{cover_name}、final.wav 与 reference.wav，再逐轨听音并核对 MIDI。\n"
               "lyrics_input.txt 保存本次输入歌词，用于评判漏词、错词和演唱顺序。\n"
               "excerpts 是固定时间窗口，不保证对应主歌/副歌；原曲与成品也不能按相同秒数视为音乐对齐。\n"
               "review_scores.csv 为模板；请在运行目录 reviews 中填写副本，多位评审可分别填写：1=很差，3=一般，5=很好；记录时间戳、置信度及意见。\n"

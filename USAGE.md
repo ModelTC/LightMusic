@@ -94,3 +94,9 @@ bash scripts/run_baseline.sh --run "$VC_SONG_RUN" --status
 - 评分不合格和执行失败不同，候选推荐不代表人工试听通过。
 
 维护检查见 [CONTRIBUTING](CONTRIBUTING.md)。
+
+## 主唱换声与原编曲
+
+先运行 `python3 scripts/setup/download_lead_duo.py` 安装双模型权重、配置和匹配的推理源码。默认生成模式保持 03 生成的调性。04 将总人声进一步拆成主唱与伴唱，05 只读取主唱，06 混回保留的伴唱和乐器。
+
+配置 `request.arrangement: original` 或传 `--arrangement original` 可以沿用原曲编排。02 选调后，04 在原调完成分离，再对主唱、伴唱与乐器使用相同半音数。非零移调需要 PATH 中有支持 R3 的 Rubber Band CLI（验证版本 3.3.0）和带 rubberband 滤镜的 FFmpeg。主唱使用 `rubberband -3 -F --centre-focus`，零移调直接保留音频。该模式跳过 03，其余分析及交付遵循 review 设置。

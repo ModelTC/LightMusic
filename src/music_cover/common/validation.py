@@ -99,6 +99,21 @@ def verify_delivery(deliver, review=True):
             raise ValueError(name)
     pages = [deliver / 'listen.html']
     result = {'technical_validation': 'passed', 'subjective_quality': 'awaiting_human_review'}
+    if checks.get('vocal_routing') == 'converted_lead_retained_backing':
+        from ..audio import read_at, fit_length
+        frames = checks['final']['frames']
+        gain = checks['final']['master_gain']
+        total = read_at(deliver / 'vocal_post_gain.wav')
+        for role in ('backing', 'instrumental'):
+            expected = fit_length(read_at(deliver / f'{role}.wav'), frames) * gain
+            actual = read_at(deliver / f'{role}_post_gain.wav')
+            if actual.shape != expected.shape or not np.allclose(actual, expected, rtol=0, atol=2e-6):
+                raise ValueError(f'Delivered {role} differs from its post-gain stem')
+            total += actual
+        total += read_at(deliver / 'mix_residual.wav')
+        if not np.allclose(total, read_at(deliver / 'final.wav'), rtol=0, atol=2e-6):
+            raise ValueError('Lead, backing, instrumental and residual do not reconstruct final')
+        result['post_gain_roles_verified'] = True
     if review:
         root = deliver / 'review'
         manifest = json.loads((root / 'manifest.json').read_text())
@@ -111,6 +126,12 @@ def verify_delivery(deliver, review=True):
             if not digest(path) == item['sha256']:
                 raise ValueError(f'Hash mismatch: {rel}')
         result.update(verify_components(deliver / 'final.wav', root, root))
+        if result.get('post_gain_roles_verified'):
+            for top, leaf in [('vocal', 'lead_vocals'), ('backing', 'backing_vocals'), ('instrumental', 'instrumental')]:
+                actual = read_at(root / 'audio' / f'{leaf}.wav')
+                expected = read_at(deliver / f'{top}_post_gain.wav')
+                if actual.shape != expected.shape or not np.allclose(actual, expected, rtol=0, atol=2e-6):
+                    raise ValueError(f'Review stem {leaf} differs from delivered {top} stem')
         result['checked_payload_files'] = len(manifest['files'])
         pages.append(root / 'index.html')
         with zipfile.ZipFile(root / 'midi_bundle.zip') as archive:

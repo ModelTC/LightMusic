@@ -18,7 +18,7 @@ from music_cover.audio import sha256
 from music_cover.common.io import identity, write_json
 
 
-def fixture(root):
+def fixture(root, *, mix_bed=False):
     """A completed separator batch and a song run; no learned model is used."""
     def audio(file, frequency, seconds=2):
         file.parent.mkdir(parents=True, exist_ok=True)
@@ -48,6 +48,8 @@ def fixture(root):
         attempt = run / "stages" / stage / f"attempt_{number:03d}"
         record = {"status": "succeeded", "fingerprint": stage, "attempt": str(attempt.relative_to(run)), "outputs": {}}
         marker = {"status": "succeeded", "stage": stage, "fingerprint": stage, "artifacts": {}}
+        if stage == '04_vocal_separation' and mix_bed:
+            roles = (*roles, 'mix_bed')
         for index, role in enumerate(roles):
             file = attempt / "artifacts" / f"{role}.wav"
             audio(file, 440 + index * 110, seconds=5)
@@ -59,7 +61,7 @@ def fixture(root):
         state["stages"][stage] = record
     write_json(run / "stage_state.json", state)
     checkpoint, model = root / config.BASE_CHECKPOINT, root / config.BASE_CONFIG
-    checkpoint.parent.mkdir(parents=True)
+    checkpoint.parent.mkdir(parents=True, exist_ok=True)
     checkpoint.write_bytes(b"test placeholder, never loaded")
     model.write_text(yaml.safe_dump({"model_params": {"test_only": True}}))
     return ["--voice-id", "singer", "--version", "manual", "--recordings-dir", "data/new/recordings",
@@ -99,6 +101,14 @@ class TrainingConfigTests(unittest.TestCase):
         self.assertEqual(value["base_config"], config.BASE_CONFIG)
         self.assertEqual([x["group"] for x in value["sources"]], ["singer:a", "singer:b", "singer:c", "singer:d"])
         self.assertNotIn(str(self.root), yaml.safe_dump(value))
+
+    def test_validation_mix_bed_uses_current_role_with_legacy_fallback(self):
+        checked = config.build_config(self.args)[0]["configuration_generation"]["checked_stage_artifacts"]
+        self.assertEqual(checked["mix_bed"], checked["instrumental"])
+        fixture(self.root, mix_bed=True)
+        checked = config.build_config(self.args)[0]["configuration_generation"]["checked_stage_artifacts"]
+        self.assertNotEqual(checked["mix_bed"]["sha256"], checked["instrumental"]["sha256"])
+        self.assertTrue(checked["mix_bed"]["path"].endswith("/mix_bed.wav"))
 
     def test_plan_is_read_only(self):
         before = self.snapshot()

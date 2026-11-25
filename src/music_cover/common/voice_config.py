@@ -135,6 +135,18 @@ def stage_artifacts(state, stage, roles):
     return result
 
 
+def validation_mix_stems(state):
+    """Resolve the original 04 mix inputs or the newer lead + retained backing bed."""
+    stage = '04_vocal_separation'
+    roles = ['vocals', 'instrumental']
+    outputs = state.get('stages', {}).get(stage, {}).get('outputs', {})
+    if 'mix_bed' in outputs:
+        roles.append('mix_bed')
+    stems = stage_artifacts(state, stage, roles)
+    stems.setdefault('mix_bed', stems['instrumental'])
+    return stems
+
+
 def validation_windows(values, duration):
     result = []
     for value in values:

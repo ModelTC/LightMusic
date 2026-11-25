@@ -8,19 +8,20 @@ import sys
 from pathlib import Path
 from .audio import sha256, inspect_audio
 from .common.paths import ROOT, read_run_state
-from .common.voice_config import stage_artifacts
+from .common.voice_config import stage_artifacts, validation_mix_stems
 from .common.voice_paths import portable_path
 from .common.io import write_json
 
 
 def artifacts(run):
     state=read_run_state(run,root=ROOT)
-    stems=stage_artifacts(state,'04_vocal_separation',['vocals','instrumental'])
+    stems=validation_mix_stems(state)
     voice=stage_artifacts(state,'05_voice_conversion',['converted','conversion'])
     mixed=stage_artifacts(state,'06_mix',['final','final_mp3','metrics'])
     conversion=json.loads(voice['conversion'].read_text())
     return {'run':portable_path(run),'backend':conversion.get('backend'),
         'source_sha256':sha256(stems['vocals']),'instrumental_sha256':sha256(stems['instrumental']),
+        'mix_bed_sha256':sha256(stems['mix_bed']),
         'converted':voice['converted'],'final':mixed['final'],'final_mp3':mixed['final_mp3'],
         'conversion':conversion,'mix':json.loads(mixed['metrics'].read_text())}
 
@@ -39,7 +40,7 @@ def main():
         if run.exists():raise ValueError('Destination exists; omit --source-run to resume it')
         subprocess.run(['bash',str(ROOT/'scripts/05_voice_conversion/fork_run.sh'),
                         '--source-run',a.source_run,'--run',str(run)],check=True)
-    before=stage_artifacts(read_run_state(run,root=ROOT),'04_vocal_separation',['vocals','instrumental'])
+    before=validation_mix_stems(read_run_state(run,root=ROOT))
     hashes={k:sha256(v) for k,v in before.items()}
     for entry in ('05_voice_conversion/fish_diffusion','06_mix'):
         cmd=['bash',str(ROOT/'scripts'/entry/'run.sh'),'--run',str(run),'--config',str(config),'--gpu',str(a.gpu)]
@@ -55,8 +56,9 @@ def main():
     rows=[]
     for index,item_run in enumerate([run,*[(ROOT/x).resolve() for x in a.compare_run]]):
         row=artifacts(item_run)
-        if row['source_sha256']!=hashes['vocals'] or row['instrumental_sha256']!=hashes['instrumental']:
-            raise ValueError('Comparison requires the identical 04 vocals and instrumental')
+        if (row['source_sha256'] != hashes['vocals'] or row['instrumental_sha256'] != hashes['instrumental']
+                or row['mix_bed_sha256'] != hashes['mix_bed']):
+            raise ValueError('Comparison requires identical 04 vocals, instrumental and mix bed')
         try:
             if error:raise RuntimeError(error)
             result=metrics.compare(before['vocals'],row['converted'],[ref],folder/f'metrics_{index:02d}')

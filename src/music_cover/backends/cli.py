@@ -9,6 +9,7 @@ OPERATIONS = {
     'transcribe': ('sheetsage', 'transcribe', False),
     'transcribe_final': ('sheetsage', 'transcribe', False),
     'cover': ('yue', 'cover', False),
+    'lead': ('lead_duo', 'lead', False),
     'separate': ('separator', 'separate', False),
     'svc_metrics': ('svc_metrics', 'evaluate', True),
     'convert_svc': ('so_vits_svc', 'convert', True),

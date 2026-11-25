@@ -1,0 +1,40 @@
+{
+  "assets": [
+    {
+      "path": "models/LeadDuo/msst/models/bs_roformer/bs_roformer.py",
+      "url": "https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/1523206d12a521bdb20673726562524cf0f9635b/models/bs_roformer/bs_roformer.py",
+      "bytes": 20494,
+      "sha256": "a6f670325cdb8a7a212914f62602119b23eb888df9bcfe4a85f9be74728b3ef4"
+    },
+    {
+      "path": "models/LeadDuo/msst/models/bs_roformer/attend.py",
+      "url": "https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/1523206d12a521bdb20673726562524cf0f9635b/models/bs_roformer/attend.py",
+      "bytes": 4410,
+      "sha256": "c7abbc40a3fd20ff7f6001fa9f8ee9ad5df6452272712a5e719b8f8468bf2223"
+    },
+    {
+      "path": "models/LeadDuo/karaoke_bs_roformer_anvuew.ckpt",
+      "url": "https://huggingface.co/anvuew/karaoke_bs_roformer/resolve/0d4423d42e12cf2ba39ae09171028507b8a2a7be/karaoke_bs_roformer_anvuew.ckpt",
+      "bytes": 204486925,
+      "sha256": "206d04757cb5f75ca3b55f8a0a48f5c26aa2351d4ff3c7adbfc9affa30ea3ae4"
+    },
+    {
+      "path": "models/LeadDuo/karaoke_bs_roformer_anvuew.yaml",
+      "url": "https://huggingface.co/anvuew/karaoke_bs_roformer/resolve/0d4423d42e12cf2ba39ae09171028507b8a2a7be/karaoke_bs_roformer_anvuew.yaml",
+      "bytes": 1973,
+      "sha256": "5cb3f127ecbc6a8e37f31ea7e05f60f360a44da43e857bde805b7b68558f6338"
+    },
+    {
+      "path": "models/LeadDuo/bs_roformer_karaoke_frazer_becruily.ckpt",
+      "url": "https://huggingface.co/becruily/bs-roformer-karaoke/resolve/0d66103c6b79c0dd0e9efd38ca70db7042f6f695/bs_roformer_karaoke_frazer_becruily.ckpt",
+      "bytes": 204436907,
+      "sha256": "eb90ee24c1154d83fbcfd27e96182f19e061557cc6e4746953125e08c29389f9"
+    },
+    {
+      "path": "models/LeadDuo/config_karaoke_frazer_becruily.yaml",
+      "url": "https://huggingface.co/becruily/bs-roformer-karaoke/resolve/0d66103c6b79c0dd0e9efd38ca70db7042f6f695/config_karaoke_frazer_becruily.yaml",
+      "bytes": 1903,
+      "sha256": "1d3b58b473025183d0d3c91e7a444cb5f1418d9f34e8f46b8d2fb10d2cc8ab34"
+    }
+  ]
+}

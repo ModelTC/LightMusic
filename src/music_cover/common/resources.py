@@ -5,15 +5,15 @@ import subprocess
 from pathlib import Path
 from ..audio import sha256
 
-ENVIRONMENTS = {'fish_diffusion': 'base', 'rvc': 'base', 'so_vits_svc': 'base', 'sheetsage': 'sheetsage2', 'yue': 'base', 'separator': 'base',
+ENVIRONMENTS = {'lead_duo': 'base', 'fish_diffusion': 'base', 'rvc': 'base', 'so_vits_svc': 'base', 'sheetsage': 'sheetsage2', 'yue': 'base', 'separator': 'base',
                 'seed_vc': 'base', 'rmvpe': 'base', 'review_stems': 'separator',
                 'midi': 'separator', 'analysis': 'separator', 'package': 'separator', 'voice_metrics': 'base'}
 # Existing stage callers also use these environment names for unrelated operations.
 # Route these operations through the same resolver as preflight.
-EXECUTION_BACKENDS = {'separate': 'separator', 'pitch': 'rmvpe', 'cover': 'yue',
+EXECUTION_BACKENDS = {'lead': 'lead_duo', 'separate': 'separator', 'pitch': 'rmvpe', 'cover': 'yue',
                       'convert': 'seed_vc', 'convert_candidates': 'voice_metrics',
                       'evaluate_voice': 'voice_metrics', 'svc_metrics': 'voice_metrics'}
-BASE_LOCKS = {'fish_diffusion': 'fish-diffusion-base.installed.txt', 'rvc': 'rvc-base.installed.txt', 'so_vits_svc': 'svc-base.installed.txt',
+BASE_LOCKS = {'lead_duo': 'pitch-base.installed.txt', 'fish_diffusion': 'fish-diffusion-base.installed.txt', 'rvc': 'rvc-base.installed.txt', 'so_vits_svc': 'svc-base.installed.txt',
               'separator': 'pitch-base.installed.txt', 'rmvpe': 'pitch-base.installed.txt',
               'yue': 'yue-base.installed.txt', 'seed_vc': 'seed-vc-base.installed.txt',
               'voice_metrics': 'seed-vc-base.installed.txt'}
@@ -45,6 +45,8 @@ def execution_python(root, environment, operation):
 def resource_data(root, backend):
     """Only the selected model entries; editing another model's lock does not invalidate this stage."""
     root = Path(root)
+    if backend == 'lead_duo':
+        return json.loads((root / 'configs/lead_duo.lock.json').read_text())
     if backend == 'fish_diffusion':
         return json.loads((root / 'configs/fish_diffusion_assets.lock.json').read_text())
     if backend == 'rvc':
@@ -63,7 +65,8 @@ def resource_data(root, backend):
         return json.loads((root / 'configs/separation_model.lock.json').read_text())
     if backend in {'review_stems', 'midi'}:
         data = json.loads((root / 'configs/review_models.lock.json').read_text())
-        return {'assets': [a for a in data['assets'] if ('basic_pitch' in a['path']) == (backend == 'midi')]}
+        prefix = 'models/review/basic_pitch' if backend == 'midi' else 'models/review/demucs/'
+        return {'assets': [a for a in data['assets'] if a['path'].startswith(prefix)]}
     return {}
 
 
@@ -95,6 +98,8 @@ def signature(root, backends):
 def requirements(root, backend):
     root = Path(root)
     required = [python_for(root, backend)]
+    if backend == 'lead_duo':
+        required += [root / a['path'] for a in resource_data(root, backend)['assets']]
     if backend == 'fish_diffusion':
         required += [root / a['path'] for a in resource_data(root, backend)['assets'] if a.get('scope') != 'training']
         required += [root / 'third_party/fish-diffusion/fish_diffusion/archs/diffsinger/diffsinger.py']
@@ -150,7 +155,7 @@ def preflight(root, backends=(), mp3=False):
     if 'rvc' in backends:
         from ..rvc import check_assets as check_rvc_assets
         check_rvc_assets(root)
-    for b in set(backends) & {'midi', 'review_stems'}:
+    for b in set(backends) & {'midi', 'review_stems', 'lead_duo'}:
         for item in resource_data(root, b)['assets']:
             p = Path(root) / item['path']
             if p.stat().st_size != item['bytes'] or sha256(p) != item['sha256']:
@@ -158,6 +163,7 @@ def preflight(root, backends=(), mp3=False):
 
 
 IMPORTS = {
+    'lead_duo': ['torch', 'soundfile', 'yaml', 'numpy', 'einops', 'beartype', 'rotary_embedding_torch'],
     'fish_diffusion': ['torch', 'torchaudio', 'pytorch_lightning', 'mmengine', 'parselmouth', 'loralib', 'wandb', 'transformers.models.hubert.modeling_hubert'],
     'rvc': ['torch', 'torchaudio', 'transformers.models.hubert.modeling_hubert', 'librosa', 'soundfile', 'faiss'],
     'so_vits_svc': ['torch', 'torchaudio', 'transformers.models.hubert.modeling_hubert', 'librosa', 'soundfile', 'faiss'],
@@ -165,7 +171,7 @@ IMPORTS = {
     'yue': ['yue2.pipeline', 'yue2.modeling_yue2', 'yue2.modeling_vae'],
     'separator': ['audio_separator.separator'],
     'seed_vc': ['torch', 'torchaudio', 'librosa', 'yaml', 'munch', 'dac.nn.quantize', 'transformers.models.whisper.modeling_whisper'],
-    'rmvpe': ['torch', 'librosa'], 'review_stems': ['demucs.pretrained', 'audio_separator.separator'],
+    'rmvpe': ['torch', 'librosa'], 'review_stems': ['demucs.pretrained'],
     'midi': ['basic_pitch.inference', 'onnxruntime', 'mido', 'pretty_midi'],
     'analysis': ['librosa'], 'package': ['mido', 'pretty_midi', 'soundfile'],
     'voice_metrics': ['speechbrain', 'librosa', 'soundfile'],

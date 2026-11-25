@@ -6,11 +6,16 @@ from .io import write_json
 
 def build_delivery(destination, request, stages, prepared, generated, separated, mixed, adaptation=None, pitch_check=None, review=None):
     destination.mkdir(exist_ok=True)
+    original_arrangement = request.get('arrangement') == 'original'
+    cover_name = 'transposed_original.wav' if original_arrangement else 'restyled.flac'
+    cover = separated['cover'] if original_arrangement else generated['cover']
     items = {"original.wav": prepared["source"], "reference.wav": prepared["reference"],
-             "restyled.flac": generated["cover"], "reconstruction.wav": mixed["reconstruction"],
+             cover_name: cover, "reconstruction.wav": mixed["reconstruction"],
              "final.wav": mixed["final"], "final.mp3": mixed["final_mp3"],
              "vocals_before.wav": separated["vocals"],
              "vocals_after.wav": mixed["aligned_vocal"], "instrumental.wav": separated["instrumental"]}
+    if 'backing' in separated:
+        items['backing.wav'] = separated['backing']
     if adaptation:
         items.update({"score_original.abc": adaptation["original_score"], "score_transposed.abc": adaptation["score"],
                       "transposition.json": adaptation["plan"], "pitch_input.json": adaptation["profiles"]})
@@ -38,7 +43,7 @@ def build_delivery(destination, request, stages, prepared, generated, separated,
         f"完整流程已执行，输出 {duration:.2f} 秒、48 kHz 立体声。\n\n"
         "自动文件、数值、时长与峰值检查已执行；音乐风格、音色相似度和自然度仍需试听验收。\n\n"
         f"目标风格：{request['style']}\n\n"
-        "依次试听 original.wav、restyled.flac、final.wav；参考人物声音在 reference.wav。"
+        f"依次试听 original.wav、{cover_name}、final.wav；参考人物声音在 reference.wav。"
         f"final.mp3 是同一最终混音的 {metrics['final_mp3']['bitrate_kbps']} kbps 压缩版，便于下载和分享。"
         "reconstruction.wav 用于检查分离和重混的损伤。\n\n"
         f"转换人声长度差：{metrics['alignment']['converted_duration_delta_s']:.6f} 秒。"
@@ -76,7 +81,7 @@ def build_delivery(destination, request, stages, prepared, generated, separated,
                    "音符 CSV、原始模型数据、校验哈希、响度/节奏描述和人工评分表均包含在 review。\n")
     (destination / "report.md").write_text(report, encoding="utf-8")
     labels = [("original.wav", "1 原曲"), ("reference.wav", "目标音色参考"),
-              ("restyled.flac", "2 换风格"), ("final.wav", "3 最终混音（WAV）"),
+              (cover_name, "2 原编曲（目标调）" if original_arrangement else "2 换风格"), ("final.wav", "3 最终混音（WAV）"),
               ("final.mp3", "最终混音（MP3）"),
               ("reconstruction.wav", "分离后直接重混对照"),
               ("vocals_before.wav", "换声前人声"), ("vocals_after.wav", "换声后人声")]

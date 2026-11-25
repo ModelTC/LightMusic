@@ -34,7 +34,7 @@ bash scripts/05_voice_conversion/run.sh \
 
 | 上游模块 | 中间产物路径 | 本模块用途 |
 | --- | --- | --- |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/vocals.wav` | 待转换的人声 |
+| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/lead.wav` | 待转换的人声 |
 | `00_prepare` | `00_prepare/attempt_001/artifacts/reference.wav` | 孙燕姿参考片段 |
 
 ## 本模块输出

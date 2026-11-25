@@ -21,6 +21,8 @@
 
 00 和 06 无新增模型。`transpose=0` 时 02 可跳过分析，但 04 仍需 BS-RoFormer。Seed-VC 虽然主文件名有 `whisper_base`，本工程实际用 Whisper-small，不要擅自替换。
 
+04 的第二级主唱分离使用 anvuew 和 Frazer × becruily 的 BS-RoFormer。在同一总人声上分别推理并平均主唱波形，伴唱取总人声减去主唱。两个 checkpoint、各自的 YAML 以及 MSST 推理源码均固定版本和 SHA256，见 [资源锁](../../configs/lead_duo.lock.json)。
+
 ### 公共主流程下载
 
 首次准备时先备份现有锁记录；下列三个下载器会更新锁，Seed-VC 下载器还会按本机位置重建运行配置。已有权重时先检查，不重复覆盖用户改过的配置。
@@ -32,6 +34,7 @@ cp configs/generation_models.lock.json configs/voice_models.lock.json configs/se
 
 envs/base/bin/python scripts/setup/download_models.py
 envs/base/bin/python scripts/setup/download_separator_model.py
+envs/base/bin/python scripts/setup/download_lead_duo.py
 envs/base/bin/python scripts/setup/download_voice_models.py
 
 # 选择任意微调/SVC/RVC/Fish 路线时还需要评估资产；零样本 05 本身不要求 ECAPA。

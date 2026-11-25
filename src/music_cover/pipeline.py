@@ -20,7 +20,7 @@ from .voice import merge_voice_config
 
 DEFAULT_REQUEST = {'name': 'cover', 'seed': 42, 'steps': 30, 'gpu': '0', 'reference_start': 0.0,
                    'reference_duration': 15.0, 'transpose': '0', 'review': True}
-REQUEST_KEYS = set(DEFAULT_REQUEST) | {'song', 'lyrics', 'reference', 'style'}
+REQUEST_KEYS = set(DEFAULT_REQUEST) | {'song', 'lyrics', 'reference', 'style', 'arrangement'}
 
 
 def read_config(path):
@@ -45,10 +45,10 @@ def select_stages(request, *, stage=None, start=None, until=None):
     else:
         first = normalize(start) if start else active[0]
         last = normalize(until) if until else active[-1]
-        if first not in active or last not in active: raise ValueError('Requested stage is disabled by --no-review')
+        if first not in active or last not in active: raise ValueError('Requested stage is disabled for this workflow')
         if active.index(first) > active.index(last): raise ValueError('--from must not follow --until')
         result = active[active.index(first):active.index(last) + 1]
-    if any(s not in active for s in result): raise ValueError('Requested stage is disabled by --no-review')
+    if any(s not in active for s in result): raise ValueError('Requested stage is disabled for this workflow')
     return result
 
 
@@ -78,6 +78,7 @@ def main():
         parser.add_argument('--' + name, type=int)
     for name in ['reference-start', 'reference-duration']:
         parser.add_argument('--' + name, type=float)
+    parser.add_argument('--arrangement', choices=['generated', 'original'], help='生成新编曲或保留原编曲')
     parser.add_argument('--review', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--preflight', action='store_true', help='只检查选中模块的依赖')
     parser.add_argument('--voice-backend', choices=['seed_vc', 'so_vits_svc', 'rvc', 'fish_diffusion'])
@@ -168,9 +169,19 @@ def main():
                 c = configs['05_voice_conversion']
                 resolve_voice(c['mode'], c['voice_profile'], backend=c['backend'])
             check_resources(ROOT, [b for name in selected for b in modules[name].backends(request, configs[name])], mp3='06_mix' in selected)
+            if '04_vocal_separation' in selected and request.get('arrangement') == 'original':
+                if request['transpose'] == 'auto':
+                    print('Automatic pitch selection: a nonzero result requires Rubber Band R3 and the FFmpeg rubberband filter.')
+                elif request['transpose'] != '0':
+                    modules['04_vocal_separation'].check_transposition_tools()
             print('Selected module preflight OK')
             return
-        for key in ['song', 'lyrics', 'reference', 'style']:
+        required = ['song', 'lyrics', 'reference']
+        if request.get('arrangement') == 'original':
+            request.setdefault('style', 'original arrangement')
+        else:
+            required.append('style')
+        for key in required:
             if not request.get(key): parser.error(f'--{key} is required (or use --config / --demo)')
         for key in ['song', 'lyrics', 'reference']:
             request[key] = str(paths.resolve(request[key]))

@@ -15,10 +15,15 @@ DEFAULTS = {'timeout_seconds': 10800, 'mp3_bitrate_kbps': 192}
 CODE = ['audio.py', 'voice_candidates.py', 'voice_alignment.py', 'voice_mixing.py']
 TIMELINE = {'*': 'generated'}
 def backends(r, c): return []
-def requires(r): return ['03_style_generation', '04_vocal_separation', '05_voice_conversion']
+def cover_stage(request):
+    return '04_vocal_separation' if request.get('arrangement') == 'original' else '03_style_generation'
+
+def requires(r):
+    return list(dict.fromkeys([cover_stage(r), '04_vocal_separation', '05_voice_conversion']))
 def inputs(ctx):
-    result = {'cover': ctx.output('03_style_generation', 'cover'), 'vocals': ctx.output('04_vocal_separation', 'vocals'),
-              'instrumental': ctx.output('04_vocal_separation', 'instrumental'), 'converted': ctx.output('05_voice_conversion', 'converted')}
+    result = {'cover': ctx.output(cover_stage(ctx.request), 'cover'), 'vocals': ctx.output('04_vocal_separation', 'vocals'),
+              'instrumental': ctx.output('04_vocal_separation', 'instrumental'), 'converted': ctx.output('05_voice_conversion', 'converted'),
+              'backing': ctx.output('04_vocal_separation', 'backing'), 'mix_bed': ctx.output('04_vocal_separation', 'mix_bed')}
     if 'candidate_report' in ctx.resolved['05_voice_conversion']:
         result.update(ctx.all_outputs('05_voice_conversion', 'candidates/'))
         result['candidate_report'] = ctx.output('05_voice_conversion', 'candidate_report')
@@ -30,7 +35,9 @@ def params(r, c):
 
 
 def run(ctx, out, i, p):
-    result = mix_tracks(i['cover'], i['vocals'], i['instrumental'], i['converted'], out, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
+    result = mix_tracks(i['cover'], i['vocals'], i.get('mix_bed', i['instrumental']), i['converted'], out, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
+    if 'backing' in i:
+        result['vocal_routing'] = 'converted_lead_retained_backing'
     write_json(out / 'mix.json', result)
     frames = result['final']['frames']
     gain = result['final']['master_gain']
@@ -38,11 +45,18 @@ def run(ctx, out, i, p):
     instrumental = fit_length(read_at(i['instrumental']), frames) * gain
     sf.write(out / 'vocal_post_gain.wav', vocal, 48000, subtype='FLOAT')
     sf.write(out / 'instrumental_post_gain.wav', instrumental, 48000, subtype='FLOAT')
-    sf.write(out / 'mix_residual.wav', read_at(out / 'final.wav') - vocal - instrumental, 48000, subtype='FLOAT')
+    residual = read_at(out / 'final.wav') - vocal - instrumental
+    if 'backing' in i:
+        backing = fit_length(read_at(i['backing']), frames) * gain
+        sf.write(out / 'backing_post_gain.wav', backing, 48000, subtype='FLOAT')
+        residual -= backing
+    sf.write(out / 'mix_residual.wav', residual, 48000, subtype='FLOAT')
     paths = {'final': out / 'final.wav', 'final_mp3': out / 'final.mp3', 'reconstruction': out / 'reconstruction.wav',
             'aligned_vocal': out / 'converted_aligned.wav', 'metrics': out / 'mix.json',
             'vocal_post_gain': out / 'vocal_post_gain.wav', 'instrumental_post_gain': out / 'instrumental_post_gain.wav', 'residual': out / 'mix_residual.wav'}
 
+    if 'backing' in i:
+        paths['backing_post_gain'] = out / 'backing_post_gain.wav'
     if 'candidate_report' in i:
         report = json.loads(i['candidate_report'].read_text())
         selected = select_output(report['candidates'])
@@ -65,7 +79,7 @@ def run(ctx, out, i, p):
                 for name in ('final.wav', 'final.mp3', 'mix.json'): shutil.copy2(out / name, folder / name)
             else:
                 try:
-                    candidate_mix = mix_tracks(i['cover'], i['vocals'], i['instrumental'], audio, folder, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
+                    candidate_mix = mix_tracks(i['cover'], i['vocals'], i.get('mix_bed', i['instrumental']), audio, folder, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
                     write_json(folder / 'mix.json', candidate_mix)
                 except (ValueError, subprocess.SubprocessError) as error:
                     row.update(mix_status='failed', mix_error=str(error))

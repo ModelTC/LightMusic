@@ -22,7 +22,6 @@ def separate_review(request, output):
     import torch
     from demucs.apply import apply_model
     from demucs.pretrained import get_model
-    from audio_separator.separator import Separator
 
     output = Path(output).resolve()
     stems = output / "audio"
@@ -34,33 +33,43 @@ def separate_review(request, output):
     master, voices, accompaniment, residual = mix_components(
         request["final"], request["vocal"], request["instrumental"], metrics)
     frames = len(master)
-    for role, data in [("vocals", voices), ("instrumental", accompaniment), ("mix_residual", residual)]:
-        write_stem(stems, role, data)
-    del residual
+    if 'backing_post_gain' in request:
+        backing = stereo_aligned(request['backing_post_gain'], frames)
+        write_stem(stems, 'lead_vocals', voices)
+        write_stem(stems, 'backing_vocals', backing)
+        write_stem(stems, 'vocals', voices + backing)
+        write_stem(stems, 'instrumental', accompaniment)
+        write_stem(stems, 'mix_residual', residual - backing)
+        del backing, residual
+    else:
+        for role, data in [("vocals", voices), ("instrumental", accompaniment), ("mix_residual", residual)]:
+            write_stem(stems, role, data)
+        del residual
 
-    print("[review] Separating converted vocal into estimated lead/backing", flush=True)
-    raw = output / "_karaoke"
-    raw.mkdir()
-    old_cwd = Path.cwd()
-    try:
-        os.chdir(raw)
-        separator = Separator(model_file_dir=str(ROOT / "models/separation"), output_dir=str(raw),
-                              output_format="WAV", normalization_threshold=1.0,
-                              amplification_threshold=0.0, sample_rate=44100, use_soundfile=True,
-                              mdxc_params={"segment_size": 256, "override_model_segment_size": False,
-                                           "batch_size": 1, "overlap": 4, "pitch_shift": 0})
-        separator.load_model(model_filename=KARAOKE)
-        separator.separate(str(stems / "vocals.wav"), {"Vocals": "lead", "Instrumental": "backing"})
-        lead = stereo_aligned(raw / "lead.wav", frames)
-        write_stem(stems, "lead_vocals", lead)
-        # The karaoke model predicts lead; remainder can include reverb and bleed.
-        write_stem(stems, "backing_vocals", voices - lead)
-        del separator, lead
-    finally:
-        os.chdir(old_cwd)
-    shutil.rmtree(raw)
-    gc.collect()
-    torch.cuda.empty_cache()
+        from audio_separator.separator import Separator
+        print("[review] Separating converted vocal into estimated lead/backing", flush=True)
+        raw = output / "_karaoke"
+        raw.mkdir()
+        old_cwd = Path.cwd()
+        try:
+            os.chdir(raw)
+            separator = Separator(model_file_dir=str(ROOT / "models/separation"), output_dir=str(raw),
+                                  output_format="WAV", normalization_threshold=1.0,
+                                  amplification_threshold=0.0, sample_rate=44100, use_soundfile=True,
+                                  mdxc_params={"segment_size": 256, "override_model_segment_size": False,
+                                               "batch_size": 1, "overlap": 4, "pitch_shift": 0})
+            separator.load_model(model_filename=KARAOKE)
+            separator.separate(str(stems / "vocals.wav"), {"Vocals": "lead", "Instrumental": "backing"})
+            lead = stereo_aligned(raw / "lead.wav", frames)
+            write_stem(stems, "lead_vocals", lead)
+            # The karaoke model predicts lead; remainder can include reverb and bleed.
+            write_stem(stems, "backing_vocals", voices - lead)
+            del separator, lead
+        finally:
+            os.chdir(old_cwd)
+        shutil.rmtree(raw)
+        gc.collect()
+        torch.cuda.empty_cache()
 
     print("[review] Separating final accompaniment using Demucs 6s", flush=True)
     model = get_model("htdemucs_6s", repo=ROOT / "models/review/demucs").eval().to("cuda")

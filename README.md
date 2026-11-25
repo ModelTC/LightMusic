@@ -33,6 +33,8 @@ python3 scripts/setup/apply_seed_vc_lora.py
                                               → 03_export → 供主流程 05 使用
 ```
 
+04 在总人声上运行 anvuew 与 Frazer Karaoke BS-RoFormer，取两者主唱估计的平均。05 转换主唱，06 混回保留的伴唱和纯乐器。可用 `--arrangement original` 保留原编曲，已有录音的主唱移调由 Rubber Band R3 处理。部署步骤与参数见 [使用说明](USAGE.md#主唱换声与原编曲)。
+
 05 共四种后端、六条路线。LoRA 是 Seed-VC V1 的适配器路线，与 V2 无关；05 不会隐式启动训练。只需歌曲成品时运行到 06；`--no-review` 只跳过 07–09，仍会执行 10–11。
 
 ## 已部署环境的最小示例
