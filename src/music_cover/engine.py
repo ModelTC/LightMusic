@@ -317,6 +317,8 @@ class Pipeline:
             if '11_delivery' in selected:
                 self.publish()
                 self.state.update(status='completed', delivery_status='current', subjective_quality='requires_listening')
+            elif self.request.get('arrangement') == 'original' and '06_mix' in selected:
+                self.state.update(status='completed', subjective_quality='requires_listening')
             else:
                 self.state['status'] = 'partial'
             self.state['last_execution'] = self.events

@@ -1,0 +1,31 @@
+{
+  "request": {
+    "name": "original_arrangement",
+    "song": "data/song.mp3",
+    "lyrics": "data/lyrics.lrc",
+    "reference": "data/reference.wav",
+    "reference_start": 0,
+    "reference_duration": 15,
+    "style": "original accompaniment; style generation skipped",
+    "transpose": "auto",
+    "seed": 42,
+    "steps": 30,
+    "gpu": "0",
+    "review": false,
+    "arrangement": "original"
+  },
+  "modules": {
+    "02_pitch_adaptation": {
+      "reference_kind": "singing",
+      "range_references": [
+        "data/range_reference.wav"
+      ]
+    },
+    "05_voice_conversion": {
+      "backend": "seed_vc",
+      "mode": "lora",
+      "voice_profile": "models/voices/singer/seed_vc_lora/v001/voice.json",
+      "candidate_count": 1
+    }
+  }
+}

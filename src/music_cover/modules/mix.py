@@ -15,9 +15,12 @@ DEFAULTS = {'timeout_seconds': 10800, 'mp3_bitrate_kbps': 192}
 CODE = ['audio.py', 'voice_candidates.py', 'voice_alignment.py', 'voice_mixing.py']
 TIMELINE = {'*': 'generated'}
 def backends(r, c): return []
-def requires(r): return ['03_style_generation', '04_vocal_separation', '05_voice_conversion']
+def requires(r):
+    stages = ['04_vocal_separation', '05_voice_conversion']
+    return stages if r.get('arrangement') == 'original' else ['03_style_generation', *stages]
 def inputs(ctx):
-    result = {'cover': ctx.output('03_style_generation', 'cover'), 'vocals': ctx.output('04_vocal_separation', 'vocals'),
+    cover_stage = '04_vocal_separation' if ctx.request.get('arrangement') == 'original' else '03_style_generation'
+    result = {'cover': ctx.output(cover_stage, 'cover'), 'vocals': ctx.output('04_vocal_separation', 'vocals'),
               'instrumental': ctx.output('04_vocal_separation', 'instrumental'), 'converted': ctx.output('05_voice_conversion', 'converted')}
     if 'candidate_report' in ctx.resolved['05_voice_conversion']:
         result.update(ctx.all_outputs('05_voice_conversion', 'candidates/'))

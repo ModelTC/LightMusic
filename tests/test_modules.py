@@ -14,6 +14,16 @@ from music_cover.common.paths import ROOT, read_run_state
 
 
 class ModularExecutionTests(unittest.TestCase):
+    def test_original_arrangement_skips_generation_and_mixes_the_prepared_stems(self):
+        request = {'arrangement': 'original', 'review': False}
+        selected = select_stages(request)
+        self.assertEqual([stage[:2] for stage in selected], ['00', '01', '02', '04', '05', '06'])
+        modules = {module.ID: module for module in load_modules()}
+        self.assertEqual(modules[selected[3]].requires(request), ['00_prepare', '02_pitch_adaptation'])
+        self.assertEqual(modules[selected[-1]].requires(request), ['04_vocal_separation', '05_voice_conversion'])
+        with self.assertRaises(ValueError):
+            select_stages(request, stage='03')
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)

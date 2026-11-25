@@ -34,3 +34,17 @@ def separate(args):
             found[role] = str(target)
     if set(found) != {"instrumental", "vocals"}:
         raise RuntimeError(f"Unexpected separation outputs: {results}")
+
+
+def lead(args):
+    from audio_separator.separator import Separator
+    from ..voice_data_separation import LEAD_MODEL
+    os.chdir(args.output)
+    separator = Separator(
+        output_dir=args.output, model_file_dir=str(ROOT / 'models/separation'),
+        output_format='WAV', normalization_threshold=1.0, amplification_threshold=0.0,
+        sample_rate=44100, use_soundfile=True,
+        mdxc_params={'segment_size': 256, 'override_model_segment_size': False,
+                     'batch_size': 1, 'overlap': 4, 'pitch_shift': 0})
+    separator.load_model(model_filename=LEAD_MODEL)
+    separator.separate(args.input, {'Vocals': 'lead', 'Instrumental': 'backing_estimate'})

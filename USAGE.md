@@ -94,3 +94,13 @@ bash scripts/run_baseline.sh --run "$VC_SONG_RUN" --status
 - 评分不合格和执行失败不同，候选推荐不代表人工试听通过。
 
 维护检查见 [CONTRIBUTING](CONTRIBUTING.md)。
+
+## 保留原伴奏，只转换主唱
+
+复制 `configs/examples/original_arrangement.json`，填入歌曲、歌词、目标歌手参考音频、音域参考和已导出的 LoRA profile。执行环境的 PATH 需要提供支持 R3 的 Rubber Band CLI（实测 3.3.0）和带 rubberband 滤镜的 FFmpeg。主伴唱分离使用项目的 lead 分离模型。
+
+```bash
+bash scripts/run_baseline.sh --config configs/examples/original_arrangement.json
+```
+
+`request.arrangement: original` 执行 00、01、02、04、05、06。02 根据目标音域选调。04 在原调先分离人声和伴奏，再提取主唱，将伴唱残差中的部分清辅音高频成分转回主唱，同时从伴唱扣除。三轨分别移调相同的半音数，主唱使用 R3 离线模式，保留共振峰并联动声道。05 只转换主唱；06 混回保留原音色的伴唱和乐器伴奏，导出全曲 WAV 和 MP3。

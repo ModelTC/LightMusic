@@ -11,6 +11,11 @@ def load_modules():
 
 
 def active_ids(request):
+    arrangement = request.get('arrangement', 'generated')
+    if arrangement == 'original':
+        return [stage for stage in IDS[:7] if stage != '03_style_generation']
+    if arrangement != 'generated':
+        raise ValueError('arrangement must be original or generated')
     return [stage for stage in IDS if request.get('review', True) or stage[:2] not in {'07', '08', '09'}]
 
 
