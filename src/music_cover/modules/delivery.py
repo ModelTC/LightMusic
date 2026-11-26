@@ -11,7 +11,8 @@ CODE = ['voice_candidates.py', 'audio.py', 'common/delivery.py', 'common/validat
 TIMELINE = {'*': 'see source artifact timeline'}
 def backends(r, c): return ['package'] if r['review'] else []
 def requires(r):
-    return ['00_prepare', '01_source_score', '02_pitch_adaptation', '03_style_generation', '04_vocal_separation', '06_mix', '10_evaluation'] + (['07_stem_separation', '08_final_score', '09_stem_midi'] if r['review'] else [])
+    generation = [] if r.get('arrangement') == 'original' else ['03_style_generation']
+    return ['00_prepare', '01_source_score', '02_pitch_adaptation', *generation, '04_vocal_separation', '06_mix', '10_evaluation'] + (['07_stem_separation', '08_final_score', '09_stem_midi'] if r['review'] else [])
 def inputs(ctx):
     result = {}
     for stage in requires(ctx.request):
@@ -29,7 +30,6 @@ def run(ctx, out, i, p):
     pitch_check = {'profiles': evaluation['pitch_profiles.json']} if 'pitch_profiles.json' in evaluation else None
     if pitch_check and 'pitch_adherence.json' in evaluation:
         pitch_check['adherence'] = evaluation['pitch_adherence.json']
-    review = None
     if ctx.request['review']:
         review_dir = out / 'review'
         request = {'stems': str(get('07_stem_separation')['stems.json'].parent),
@@ -47,14 +47,9 @@ def run(ctx, out, i, p):
         request_file = out / 'package_request.json'
         write_json(request_file, request)
         ctx.execute('separator', 'review_package', review_dir, '--request', request_file)
-        review = artifact_paths(review_dir)
     build_delivery(out, ctx.request, ctx.state['stages'], prepared, generated, separated, mixed,
-                   adaptation, pitch_check, review=None)
-    if review:
-        page = out / 'listen.html'
-        page.write_text(page.read_text().replace('<h1>', '<p><a href="review/index.html">成品分轨与 MIDI 专业评审包</a></p><h1>', 1))
-        with (out / 'report.md').open('a') as f:
-            f.write('\n成品分轨及 MIDI：review/index.html。人工评分请填写运行目录 reviews 中的副本。\n')
+                   adaptation, pitch_check, review=ctx.request['review'],
+                   voice_backend=ctx.config['05_voice_conversion']['backend'])
     if 'candidate_report' in mixed:
         report = json.loads(mixed['candidate_report'].read_text())
         for row in report['candidates']:
@@ -73,7 +68,8 @@ def run(ctx, out, i, p):
         with (out / 'report.md').open('a') as stream:
             stream.write('\n微调候选对比：candidates.html；推荐：' + (report.get('recommended_id') or '无合格候选') + '；默认输出：' + (report.get('selected_id',report.get('recommended_id')) or '无') + '。未获推荐的默认输出需要人工确认。指标取自 05 转换后干声；后续分轨、MIDI 对应默认输出版本。\n')
     shutil.copyfile(evaluation['evaluation.json'], out / 'evaluation.json')
-    for key in ['vocal_post_gain', 'instrumental_post_gain', 'residual']:
+    post_gain_roles = ['vocal_post_gain', 'instrumental_post_gain', 'backing_post_gain', 'residual']
+    for key in post_gain_roles:
         shutil.copyfile(mixed[key], out / mixed[key].name)
     write_json(out / 'config.resolved.json', {'request': ctx.paths.request(ctx.request, portable=True), 'modules': ctx.config})
     request_file = out / 'validation_request.json'

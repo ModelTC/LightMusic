@@ -10,9 +10,11 @@ import uuid
 from pathlib import Path
 import yaml
 
+from .audio import sha256
 from .engine import Pipeline
 from .common.io import write_json
 from .common.lyrics import clean_lyrics
+from .common.voice_config import stage_artifacts
 from .common.paths import ROOT, RunPaths
 from .common.resources import preflight as check_resources
 from .modules import load_modules, IDS, active_ids, normalize
@@ -20,7 +22,52 @@ from .voice import merge_voice_config
 
 DEFAULT_REQUEST = {'name': 'cover', 'seed': 42, 'steps': 30, 'gpu': '0', 'reference_start': 0.0,
                    'reference_duration': 15.0, 'transpose': '0', 'review': True}
-REQUEST_KEYS = set(DEFAULT_REQUEST) | {'song', 'lyrics', 'reference', 'style'}
+REQUEST_KEYS = set(DEFAULT_REQUEST) | {'song', 'lyrics', 'reference', 'style', 'arrangement'}
+
+
+def pitch_inputs_match(request, paths, stages):
+    """Check the recording, reference crop and range references used by the saved plan."""
+    prepared = stages.get('00_prepare', {})
+    pitch = stages['02_pitch_adaptation']
+    if prepared.get('status') != 'succeeded':
+        return False
+    for key, param in [('reference_start', 'start'), ('reference_duration', 'duration')]:
+        if request[key] != prepared['params'][param]:
+            return False
+    prepare_inputs = read_config(Path(prepared['attempt']) / 'inputs.json')['artifacts']
+    pitch_inputs = read_config(Path(pitch['attempt']) / 'inputs.json')['artifacts']
+    for key, role in [('song', 'source'), ('reference', 'reference')]:
+        current = paths.resolve(request[key])
+        recorded = prepare_inputs[key]
+        if (current != paths.resolve(recorded['path']) or not current.is_file()
+                or sha256(current) != recorded['sha256']
+                or prepared['outputs'][role]['sha256'] != pitch_inputs[role]['sha256']):
+            return False
+    for key, row in pitch_inputs.items():
+        if key.startswith('range_reference_'):
+            source = paths.resolve(row['path'])
+            if not source.is_file() or sha256(source) != row['sha256']:
+                return False
+    return True
+
+
+def preflight_original_transposition(request, paths, selected, pitch_params, force):
+    from .modules.vocal_separation import check_transposition_tools
+
+    semitones = request['transpose']
+    if semitones == 'auto':
+        stage = '02_pitch_adaptation'
+        state = paths.restore_state()
+        stages = state.get('stages', {})
+        record = stages.get(stage, {})
+        if (record.get('status') != 'succeeded' or record.get('params') != pitch_params
+                or (force and stage in selected) or not pitch_inputs_match(request, paths, stages)):
+            print('Automatic pitch not yet verified: a nonzero result requires Rubber Band R3 and the FFmpeg rubberband filter.')
+            return
+        plan = stage_artifacts(state, stage, ['plan'])['plan']
+        semitones = json.loads(plan.read_text())['applied_semitones']
+    if int(semitones):
+        check_transposition_tools()
 
 
 def read_config(path):
@@ -40,16 +87,14 @@ def module_config(root=ROOT):
 
 def select_stages(request, *, stage=None, start=None, until=None):
     active = active_ids(request)
-    if stage:
-        result = [normalize(stage)]
-    else:
-        first = normalize(start) if start else active[0]
-        last = normalize(until) if until else active[-1]
-        if first not in active or last not in active: raise ValueError('Requested stage is disabled by --no-review')
-        if active.index(first) > active.index(last): raise ValueError('--from must not follow --until')
-        result = active[active.index(first):active.index(last) + 1]
-    if any(s not in active for s in result): raise ValueError('Requested stage is disabled by --no-review')
-    return result
+    first = normalize(stage or start) if stage or start else active[0]
+    last = normalize(stage or until) if stage or until else active[-1]
+    if first not in active or last not in active:
+        raise ValueError('Requested stage is disabled for this workflow')
+    begin, end = active.index(first), active.index(last)
+    if begin > end:
+        raise ValueError('--from must not follow --until')
+    return active[begin:end + 1]
 
 
 def preflight(review=True):
@@ -78,6 +123,7 @@ def main():
         parser.add_argument('--' + name, type=int)
     for name in ['reference-start', 'reference-duration']:
         parser.add_argument('--' + name, type=float)
+    parser.add_argument('--arrangement', choices=['generated', 'original'], help='生成新编曲或保留原编曲')
     parser.add_argument('--review', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--preflight', action='store_true', help='只检查选中模块的依赖')
     parser.add_argument('--voice-backend', choices=['seed_vc', 'so_vits_svc', 'rvc', 'fish_diffusion'])
@@ -168,9 +214,17 @@ def main():
                 c = configs['05_voice_conversion']
                 resolve_voice(c['mode'], c['voice_profile'], backend=c['backend'])
             check_resources(ROOT, [b for name in selected for b in modules[name].backends(request, configs[name])], mp3='06_mix' in selected)
+            if '04_vocal_separation' in selected and request.get('arrangement') == 'original':
+                pitch = modules['02_pitch_adaptation']
+                preflight_original_transposition(request, paths, selected, pitch.params(request, configs[pitch.ID]), args.force)
             print('Selected module preflight OK')
             return
-        for key in ['song', 'lyrics', 'reference', 'style']:
+        required = ['song', 'lyrics', 'reference']
+        if request.get('arrangement') == 'original':
+            request.setdefault('style', 'original arrangement')
+        else:
+            required.append('style')
+        for key in required:
             if not request.get(key): parser.error(f'--{key} is required (or use --config / --demo)')
         for key in ['song', 'lyrics', 'reference']:
             request[key] = str(paths.resolve(request[key]))

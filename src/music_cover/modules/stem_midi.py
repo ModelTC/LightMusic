@@ -2,7 +2,7 @@ from ..common.io import write_json, artifact_paths
 ID = '09_stem_midi'
 DEFAULTS = {'timeout_seconds': 10800, 'onset_threshold': 0.5, 'frame_threshold': 0.3, 'minimum_note_ms': 90}
 CODE = ['audio.py', 'common/review_audio.py', 'backends/midi.py']
-TIMELINE = {'*': 'generated'}
+TIMELINE = {'*': '{arrangement}'}
 def backends(r, c): return ['midi']
 def requires(r): return ['07_stem_separation', '08_final_score']
 def inputs(ctx):

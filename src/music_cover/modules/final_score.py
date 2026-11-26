@@ -2,7 +2,7 @@ from ..common.io import artifact_paths
 ID = '08_final_score'
 DEFAULTS = {'timeout_seconds': 10800}
 CODE = ['backends/sheetsage.py']
-TIMELINE = {'*': 'generated'}
+TIMELINE = {'*': '{arrangement}'}
 def backends(r, c): return ['sheetsage']
 def requires(r): return ['06_mix']
 def inputs(ctx): return {'final': ctx.output('06_mix', 'final')}

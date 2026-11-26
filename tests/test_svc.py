@@ -110,7 +110,13 @@ class SharedRunTests(unittest.TestCase):
             child=json.loads((root/'child/stage_state.json').read_text());self.assertEqual(set(child['stages']),set(IDS[:5]))
             self.assertEqual(digest,sha256(source/'stage_state.json'))
             with self.assertRaisesRegex(ValueError,'already exists'):module.fork(source,root/'child')
-            next(source.rglob('audio.wav')).write_bytes(b'corrupt')
+            del stages[IDS[3]]
+            write_json(source/'request.json', {'arrangement': 'original'})
+            write_json(source/'stage_state.json', {'schema_version': 2, 'stages': stages})
+            original = module.fork(source, root/'original')
+            inherited = json.loads((original/'shared_upstream.json').read_text())['stages']
+            self.assertEqual(inherited, [IDS[i] for i in (0, 1, 2, 4)])
+            (source/IDS[0]/'audio.wav').write_bytes(b'corrupt')
             with self.assertRaisesRegex(ValueError,'artifact changed'):module.fork(source,root/'bad')
             self.assertFalse((root/'bad').exists())
 

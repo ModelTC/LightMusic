@@ -11,7 +11,13 @@ def load_modules():
 
 
 def active_ids(request):
-    return [stage for stage in IDS if request.get('review', True) or stage[:2] not in {'07', '08', '09'}]
+    arrangement = request.get('arrangement', 'generated')
+    if arrangement not in {'generated', 'original'}:
+        raise ValueError('arrangement must be original or generated')
+    stages = [stage for stage in IDS if request.get('review', True) or stage[:2] not in {'07', '08', '09'}]
+    if arrangement == 'original':
+        stages.remove('03_style_generation')
+    return stages
 
 
 def normalize(value):

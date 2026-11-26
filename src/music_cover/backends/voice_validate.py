@@ -16,6 +16,7 @@ from ..voice_candidates import assessment
 from ..common.io import write_json
 from ..common.paths import ROOT, read_run_state
 from .voice_metrics import VoiceMetrics
+from ..common.voice_config import validation_mix_stems
 from ..common.voice_paths import portable_path, training_output
 
 
@@ -65,18 +66,15 @@ def validate_voice(c, run, out, requested, split):
         refs = [reference]
     source_run = path(c['validation']['source_run'])
     state = read_run_state(source_run)
-    source_items = state['stages']['04_vocal_separation']['outputs']
-    for role in ('vocals', 'instrumental'):
-        item = source_items[role]
-        if sha256(item['path']) != item['sha256']: raise ValueError(f'Corrupt source stage output: {role}')
+    source_items = validation_mix_stems(state)
     prompt = out / 'reference.wav'
     decode(reference, prompt, rate=44100, channels=1)
     cases = []
     for i, window in enumerate(c['validation']['windows']):
         folder = out / f'case_{i + 1:03d}'; folder.mkdir()
-        source, backing = folder / 'source.wav', folder / 'instrumental.wav'
-        for role, target in [('vocals', source), ('instrumental', backing)]:
-            decode(source_items[role]['path'], target, rate=44100, channels=1 if role == 'vocals' else 2,
+        source, backing = folder / 'source.wav', folder / 'mix_bed.wav'
+        for role, target in [('vocals', source), ('mix_bed', backing)]:
+            decode(source_items[role], target, rate=44100, channels=1 if role == 'vocals' else 2,
                    start=window['start'], duration=window['duration'])
         baseline = infer(source, prompt, folder / 'zero_shot', c['validation'])
         cases.append({'folder': folder, 'source': source, 'backing': backing, 'baseline': baseline, 'window': window})

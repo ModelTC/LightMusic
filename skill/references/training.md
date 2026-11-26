@@ -26,7 +26,7 @@ data/raw/references/my_voice/
 
 ## 2. 从原始素材重新分离主唱
 
-先按 [weights.md](weights.md) 准备 BS-RoFormer 和 Karaoke 资源。默认两级分离，不训练模型：
+先按 [weights.md](weights.md) 准备 BS-RoFormer 和 anvuew + Frazer 资源。默认两级分离，不训练模型：
 
 ```bash
 bash scripts/voice_data/separate/run.sh \

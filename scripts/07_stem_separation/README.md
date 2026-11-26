@@ -1,6 +1,6 @@
 # 07_stem_separation · 生成供评审的成品分轨
 
-继续拆分转换后人声与伴奏，生成同起点、同长度的主唱、背景人声及乐器评审音轨。
+读取 06 的对齐主唱和保留伴唱，用 Demucs 拆分纯乐器伴奏，生成同起点、同长度的评审分轨。
 
 ## 使用示例
 
@@ -28,8 +28,9 @@ bash scripts/07_stem_separation/run.sh \
 | --- | --- | --- |
 | `06_mix` | `06_mix/attempt_001/artifacts/final.wav` | 最终混音，用于时间轴及重建对照 |
 | `06_mix` | `06_mix/attempt_001/artifacts/converted_aligned.wav` | 转换且已对齐的人声 |
+| `06_mix` | `backing_post_gain.wav` | 已匹配成品增益的原音色伴唱 |
 | `06_mix` | `06_mix/attempt_001/artifacts/mix.json` | 混音增益与对齐信息 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/instrumental.wav` | 用于乐器拆分的伴奏 |
+| `04_vocal_separation` | `instrumental` 角色（`instrumental.wav` 或 `instrumental_transposed.wav`） | 用于乐器拆分的伴奏 |
 
 ## 本模块输出
 
@@ -38,8 +39,8 @@ bash scripts/07_stem_separation/run.sh \
 | 文件 / 目录 | 内容及下游用途 |
 | --- | --- |
 | `stems.json` | 轨道清单与相加规则；供 09、10、11 使用 |
-| `audio/lead_vocals.wav` | 主唱音轨 |
-| `audio/backing_vocals.wav` | 背景人声 / 和声音轨 |
+| `audio/lead_vocals.wav` | 换声后的主唱 |
+| `audio/backing_vocals.wav` | 来自 04、按混音总增益保留的原音色伴唱 |
 | `audio/drums.wav` | 鼓音轨 |
 | `audio/bass.wav` | 贝斯音轨 |
 | `audio/guitar.wav` | 吉他音轨 |

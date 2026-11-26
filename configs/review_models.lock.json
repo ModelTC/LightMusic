@@ -1,18 +1,6 @@
 {
   "assets": [
     {
-      "path": "models/separation/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt",
-      "url": "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt",
-      "bytes": 913096801,
-      "sha256": "1de20d459332fe8869aeb01327a31df0032262706e1365114e852dc271779813"
-    },
-    {
-      "path": "models/separation/config_mel_band_roformer_karaoke.yaml",
-      "url": "https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/config_mel_band_roformer_karaoke.yaml",
-      "bytes": 1794,
-      "sha256": "30364842112e18500aca7ff7b1acf235251eb4ee93b377278176b432410eae33"
-    },
-    {
       "path": "models/review/demucs/5c90dfd2-34c22ccb.th",
       "url": "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/5c90dfd2-34c22ccb.th",
       "bytes": 54996327,

@@ -109,7 +109,7 @@ def checked_recordings(args, root):
     return selected, excluded, manifest_file
 
 
-def stage_artifacts(state, stage, roles):
+def stage_artifacts(state, stage, roles, optional_roles=()):
     record = state.get("stages", {}).get(stage, {})
     if record.get("status") != "succeeded":
         raise ValueError(f"Source run needs a successful {stage}")
@@ -122,6 +122,12 @@ def stage_artifacts(state, stage, roles):
             or marker.get("fingerprint") != record.get("fingerprint")):
         raise ValueError(f"Stage outputs manifest differs from current state: {stage}")
     result = {}
+    roles = list(roles)
+    for role in optional_roles:
+        if (role in record["outputs"]) != (role in marker["artifacts"]):
+            raise ValueError(f"Stage artifact role differs from current state: {stage}/{role}")
+        if role in marker["artifacts"]:
+            roles.append(role)
     for role in roles:
         row = record["outputs"][role]
         saved = marker["artifacts"][role]
@@ -133,6 +139,14 @@ def stage_artifacts(state, stage, roles):
             raise ValueError(f"Stage artifact missing or changed: {stage}/{role}")
         result[role] = file
     return result
+
+
+def validation_mix_stems(state):
+    """Resolve the original 04 mix inputs or the newer lead + retained backing bed."""
+    stage = '04_vocal_separation'
+    stems = stage_artifacts(state, stage, ('vocals', 'instrumental'), optional_roles=('mix_bed',))
+    stems.setdefault('mix_bed', stems['instrumental'])
+    return stems
 
 
 def validation_windows(values, duration):

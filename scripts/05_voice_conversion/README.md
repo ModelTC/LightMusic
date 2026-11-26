@@ -26,7 +26,7 @@ bash scripts/05_voice_conversion/run.sh \
   --run runs/qiu_yi_nong_modular_test
 ```
 
-示例继承 steps=30、seed=42。旋律移调已由 02 处理；本模块保持 Seed-VC 半音偏移为 0，关闭其自动 F0 移调。输出在 06 中再与伴奏对齐。
+示例继承 steps=30、seed=42。02 决定目标调，03 按谱生成或由 04 对原编曲分轨移调；本模块保持 Seed-VC 半音偏移为 0，关闭其自动 F0 移调。输出在 06 中再与伴奏对齐。
 
 ## 读取哪些输入
 
@@ -34,7 +34,7 @@ bash scripts/05_voice_conversion/run.sh \
 
 | 上游模块 | 中间产物路径 | 本模块用途 |
 | --- | --- | --- |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/vocals.wav` | 待转换的人声 |
+| `04_vocal_separation` | 04 的 `vocals` 角色：生成编曲或原编曲零移调取 `lead.wav`，原编曲非零移调取 `vocals_transposed.wav` | 待转换的人声 |
 | `00_prepare` | `00_prepare/attempt_001/artifacts/reference.wav` | 孙燕姿参考片段 |
 
 ## 本模块输出

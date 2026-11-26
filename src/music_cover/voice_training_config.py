@@ -19,7 +19,7 @@ from .common.voice_paths import portable_path
 BASE_CHECKPOINT = "models/Seed-VC/DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth"
 BASE_CONFIG = "models/Seed-VC/config_dit_mel_seed_uvit_whisper_base_f0_44k.yml"
 from .common.voice_config import (
-    SEPARATION_TOOL, read_json, stage_artifacts, validation_windows, write_new_config,
+    SEPARATION_TOOL, read_json, stage_artifacts, validation_mix_stems, validation_windows, write_new_config,
     checked_recordings as _checked_recordings,
 )
 
@@ -102,7 +102,7 @@ def build_config(args):
     rows, excluded, manifest_file = checked_recordings(args)
     state = read_run_state(path(args.source_run), root=ROOT)
     reference = stage_artifacts(state, "00_prepare", ["reference"])["reference"]
-    stems = stage_artifacts(state, "04_vocal_separation", ["vocals", "instrumental"])
+    stems = validation_mix_stems(state)
     reference_sha = sha256(reference)
     if reference_sha in {r["sha256"] for r in rows}:
         raise ValueError("Reference prompt must be held out from train/validation/test recordings")

@@ -8,7 +8,7 @@
 
 以下示例统一使用“单依纯参考音色＋绿洲”，运行目录为 `runs/lhd_lv_zhou_shan_yi_chun_modular_test`。各模块使用同一个 `--run`，串联同一首歌曲的中间产物。
 
-前置条件：同一个运行目录中，下列直接依赖及其上游已成功完成，且产物和参数仍有效：[03_style_generation](../03_style_generation/README.md)、[04_vocal_separation](../04_vocal_separation/README.md)、[05_voice_conversion](../05_voice_conversion/README.md)。
+两种模式都需要同一次运行中有效的 [04 分离](../04_vocal_separation/README.md) 和 [05 换声](../05_voice_conversion/README.md) 产物。生成编曲还会读取 [03](../03_style_generation/README.md) 的整曲作为对照。
 
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
@@ -28,9 +28,11 @@ bash scripts/06_mix/run.sh \
 
 | 上游模块 | 中间产物路径 | 本模块用途 |
 | --- | --- | --- |
-| `03_style_generation` | `03_style_generation/attempt_001/artifacts/generated/audio.flac` | 生成歌曲的长度及音频对照 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/vocals.wav` | 换声前人声，用于对齐与增益参考 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/instrumental.wav` | 待混入的伴奏 |
+| `03_style_generation` | `03_style_generation/attempt_001/artifacts/generated/audio.flac` | 生成编曲的长度及音频对照 |
+| `04_vocal_separation` | `cover.wav` | 原编曲的长度及目标调音频对照 |
+| `04_vocal_separation` | 04 的 `vocals` 角色：生成编曲或原编曲零移调取 `lead.wav`，原编曲非零移调取 `vocals_transposed.wav` | 换声前人声，用于对齐与增益参考 |
+| `04_vocal_separation` | `instrumental`、`backing` | 目标调纯乐器和伴唱，分别写出增益后分轨 |
+| `04_vocal_separation` | `mix_bed.wav` | 含伴唱与乐器的混音底轨，与换声主唱相加 |
 | `05_voice_conversion` | `05_voice_conversion/attempt_001/artifacts/converted.wav` | 转换后人声 |
 
 ## 本模块输出
@@ -44,9 +46,10 @@ bash scripts/06_mix/run.sh \
 | `converted_aligned.wav` | 对齐后人声；供 07 和可选的 10 音高检查 |
 | `mix.json` | 对齐、增益及音频指标；供 07、10、11 使用 |
 | `reconstruction.wav` | 换声前人声与伴奏的重混对照 |
-| `vocal_post_gain.wav` | 实际混入的增益后人声 |
-| `instrumental_post_gain.wav` | 实际混入的增益后伴奏 |
-| `mix_residual.wav` | 最终混音与上述两项之和的数值残差 |
+| `vocal_post_gain.wav` | 增益后的换声主唱 |
+| `instrumental_post_gain.wav` | 增益后的纯乐器伴奏 |
+| `backing_post_gain.wav` | 增益后的原音色伴唱 |
+| `mix_residual.wav` | 最终混音与上述三项之和的数值残差 |
 
 ## 查看记录与重跑
 

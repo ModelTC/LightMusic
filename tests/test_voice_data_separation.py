@@ -169,12 +169,17 @@ class SeparationTests(unittest.TestCase):
         fake.Separator = FakeSeparator
         previous = Path.cwd()
         try:
-            with patch.dict("sys.modules", {"audio_separator.separator": fake}):
+            def separate_lead(source, directory, *, overlap):
+                self.assertEqual(overlap, 4)
+                shutil.copy2(source, directory / "lead.wav")
+                shutil.copy2(source, directory / "backing.wav")
+            with patch.dict("sys.modules", {"audio_separator.separator": fake}), patch(
+                    "music_cover.backends.lead_duo.separate_lead", side_effect=separate_lead):
                 module.worker(str(request))
         finally:
             os.chdir(previous)
-        self.assertEqual(models, [module.VOCALS_MODEL, module.LEAD_MODEL])
-        self.assertEqual([o["mdxc_params"]["overlap"] for o in options], [8, 4])
+        self.assertEqual(models, [module.VOCALS_MODEL])
+        self.assertEqual([o["mdxc_params"]["overlap"] for o in options], [8])
         self.assertTrue(all(o["sample_rate"] == 44100 and o["use_soundfile"] for o in options))
         self.assertTrue((work / "lead.wav").is_file())
 

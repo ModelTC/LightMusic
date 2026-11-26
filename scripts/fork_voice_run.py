@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
 from music_cover.audio import sha256
 from music_cover.common.io import write_json
 from music_cover.common.paths import read_run_state, RunPaths
-from music_cover.modules import IDS
+from music_cover.modules import IDS, active_ids
 from music_cover.common.voice_paths import portable_path
 
 
@@ -19,7 +19,10 @@ def fork(source,destination):
     state=read_run_state(source, root=ROOT)
     if state.get('schema_version')!=2:raise ValueError('Require a modular source run')
     kept={}
-    for name in IDS[:5]:
+    request = json.loads((source / 'request.json').read_text())
+    for name in active_ids(request):
+        if name not in IDS[:5]:
+            continue
         record=state['stages'][name]
         if record['status']!='succeeded':raise ValueError('Source stage incomplete: '+name)
         marker=Path(record['attempt'])/'outputs.json'

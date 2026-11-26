@@ -81,7 +81,7 @@ class AudioTests(unittest.TestCase):
                 {"vocals": paths["vocal"], "instrumental": paths["acc"]},
                 {"final": root / "final.wav", "final_mp3": root / "final.mp3",
                  "reconstruction": root / "reconstruction.wav", "aligned_vocal": root / "converted_aligned.wav",
-                 "metrics": root / "mix.json"})
+                 "metrics": root / "mix.json"}, voice_backend="seed_vc")
             for name in ["final.wav", "final.mp3"]:
                 self.assertEqual(sha256(delivered / name), sha256(root / name))
                 self.assertIn(f'src="{name}"', (delivered / "listen.html").read_text())

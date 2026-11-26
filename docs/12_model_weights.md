@@ -22,16 +22,16 @@
 | `01_source_score` | SheetSage2 + MERT-v2-FullSong | 原曲转谱；MERT 是配套音频编码器 |
 | `02_pitch_adaptation` | BS-RoFormer + RMVPE | 分离原曲人声、提取原曲与参考的音高，推荐升调或降调；`--transpose 0` 时跳过这些模型调用 |
 | `03_style_generation` | YuE2-3B + YuE2-Vae | 根据乐谱、歌词和风格生成音乐，并解码为音频 |
-| `04_vocal_separation` | BS-RoFormer | 新生成音乐拆成人声和伴奏 |
+| `04_vocal_separation` | BS-RoFormer、anvuew + Frazer | 原曲或生成音乐分为主唱、伴唱和乐器 |
 | `05_voice_conversion` | 按路线选择：Seed-VC＋Whisper-small/CAMPPlus/RMVPE/BigVGAN；SVC＋ContentVec/RMVPE；RVC＋HuBERT/RMVPE/索引；Fish＋ContentVec/Parselmouth/NSF-HiFiGAN | 统一输出转换人声；后三种需要人物模型，Fish 的 F0 算法不另需权重，RMVPE仍用于评估 |
 | `06_mix` | 无新增模型权重 | 对齐、增益处理和混音 |
-| `07_stem_separation` | Mel-Band RoFormer Karaoke + Demucs `htdemucs_6s` | 估计主唱/背景人声，以及鼓、贝斯、吉他、钢琴等分轨 |
+| `07_stem_separation` | Demucs `htdemucs_6s` | 保留已有主唱和伴唱，分离鼓、贝斯、吉他、钢琴等分轨 |
 | `08_final_score` | 复用 SheetSage2 + MERT-v2-FullSong | 对最终混音重新转谱 |
 | `09_stem_midi` | Basic Pitch ONNX | 分轨转 MIDI；和弦 MIDI 复用 08 结果，鼓 MIDI 使用频带起音规则，无额外鼓转谱模型 |
 | `10_evaluation` | 条件性复用 RMVPE | `pitch_check=true` 且请求的 `transpose` 不为 `0` 时检查实际移调与换声后的音高保持 |
 | `11_delivery` | 无新增模型权重 | 整理交付与评审包 |
 
-`--no-review` 会跳过 07、08、09，因此不需要 Mel-Band RoFormer Karaoke、Demucs 和 Basic Pitch 这三组评审模型。SheetSage2 仍被 01 使用，RMVPE 仍被 05 使用；不能因为跳过某个复用阶段就把这些权重删掉。
+`--no-review` 会跳过 07、08、09，因此不需要 Demucs 和 Basic Pitch 两组评审模型。SheetSage2 仍被 01 使用，RMVPE 仍被 05 使用；不能因为跳过某个复用阶段就把这些权重删掉。
 
 “分轨”与“MIDI”均为模型或规则的估计结果；有权重、有输出文件，不代表分离无串音或乐谱完全正确。
 
@@ -51,7 +51,7 @@
 | CAMPPlus | `models/CAMPPlus/campplus_cn_common.bin` | 28 MB | `funasr/campplus` |
 | RMVPE | `models/RMVPE/rmvpe.pt` | 181 MB | `lj1995/VoiceConversionWebUI` |
 | BigVGAN | `models/BigVGAN/bigvgan_generator.pt` | 489 MB | `nvidia/bigvgan_v2_44khz_128band_512x` |
-| Mel-Band RoFormer Karaoke | `models/separation/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt` | 913 MB | [UVR Karaoke 发布资产](https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt) |
+| anvuew + Frazer | `models/LeadDuo/` | 约 409 MB（含配置与源码） | [固定版本与 SHA256](../configs/lead_duo.lock.json) |
 | Demucs `htdemucs_6s` | `models/review/demucs/5c90dfd2-34c22ccb.th` | 55 MB | [Demucs 权重](https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/5c90dfd2-34c22ccb.th) |
 | Basic Pitch | `models/review/basic_pitch.onnx` | 230 KB | 安装 `basic-pitch==0.4.0` 后，由准备脚本复制包内 ONNX 模型 |
 
@@ -69,7 +69,7 @@
 | BS-RoFormer | `models/separation/model_bs_roformer_ep_317_sdr_12.9755.yaml` |
 | Seed-VC | `models/Seed-VC/config_dit_mel_seed_uvit_whisper_base_f0_44k.yml`；实际运行使用派生配置 `configs/seed_svc.local.yml` |
 | BigVGAN | `models/BigVGAN/config.json` |
-| Mel-Band RoFormer Karaoke | 准备脚本登记 `models/separation/config_mel_band_roformer_karaoke.yaml`；现有 `audio-separator` 运行目录还包含 `models/separation/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956_config.yaml`，迁移时一并保留 |
+| anvuew + Frazer | 配置及推理源码列在 [双模型锁](../configs/lead_duo.lock.json) |
 | Demucs | `models/review/demucs/htdemucs_6s.yaml`，其中指定对应的 `.th` 权重 |
 
 `audio-separator` 首次加载还可能获取模型目录信息或配套配置，不能仅凭权重文件齐全就认定已支持完全离线运行。准备离线机器时，应复制已验证的分离模型目录及相关缓存，并完成一次实际加载/短段推理验证。
@@ -98,7 +98,7 @@ Hugging Face 下载脚本固定以下 revision，不以最新 `main` 替代。�
 | [voice_models.lock.json](../configs/voice_models.lock.json) | 5 组换声/音高模型的仓库、revision、下载目录 |
 | [separation_model.lock.json](../configs/separation_model.lock.json) | BS-RoFormer 权重与配置的 URL、大小/哈希 |
 | [local_assets.lock.json](../configs/local_assets.lock.json) | 已归档本地模型文件的大小与 SHA256 快照 |
-| [review_models.lock.json](../configs/review_models.lock.json) | Karaoke、Demucs、Basic Pitch 及评审配置的 URL、大小、SHA256、包版本 |
+| [review_models.lock.json](../configs/review_models.lock.json) | Demucs、Basic Pitch 及评审配置的 URL、大小、SHA256、包版本 |
 
 `generation_models.lock.json` 和 `voice_models.lock.json` 的 revision 记录不是逐文件 SHA256。下载脚本会更新相应锁文件；首次恢复时先保留 Git 中的已验证记录，再与下载结果比较。分离/评审下载脚本通常记录本次实际哈希，只有 Demucs 额外检查上游文件名中的短哈希；“脚本运行成功并写出新哈希”不等于已与原验证版本比对。
 
@@ -148,26 +148,24 @@ envs/control/bin/python scripts/download_voice_models.py
 ### 4.4 下载基础人声分离模型（1 组）
 
 ```bash
-envs/control/bin/python scripts/download_separator_model.py
+envs/control/bin/python scripts/setup/download_separator_model.py
 ```
 
-得到 `models/separation/model_bs_roformer_ep_317_sdr_12.9755.ckpt` 和配套 YAML。该模型同时服务 02 的原曲人声分析及 04 的生成歌曲分离。对应实现是 [scripts/setup/download_separator_model.py](../scripts/setup/download_separator_model.py)。
+得到 `models/separation/model_bs_roformer_ep_317_sdr_12.9755.ckpt` 和配套 YAML。双模型通过 `python3 scripts/setup/download_lead_duo.py` 安装。一级模型同时服务 02 的原曲人声分析及 04 的生成歌曲分离。对应实现是 [scripts/setup/download_separator_model.py](../scripts/setup/download_separator_model.py)。
 
-### 4.5 准备分轨与 MIDI 评审模型（3 组）
+### 4.5 准备分轨与 MIDI 评审模型（2 组）
 
 ```bash
 # 这里复用已配置的 separator 环境；此清单仅包含附加依赖。
 envs/separator/bin/python -m pip install --no-deps -r configs/review-requirements.txt
-envs/separator/bin/python scripts/setup_review_assets.py
+envs/separator/bin/python scripts/setup/setup_review_assets.py
 ```
 
-得到 Karaoke 权重/配置、Demucs 权重/配置，以及 `models/review/basic_pitch.onnx`。Basic Pitch 模型从安装包复制，运行使用 CPU ONNX；无需为此安装 TensorFlow。对应实现是 [scripts/setup/setup_review_assets.py](../scripts/setup/setup_review_assets.py)。
+得到 Demucs 权重/配置，以及 `models/review/basic_pitch.onnx`。Basic Pitch 模型从安装包复制，运行使用 CPU ONNX；无需为此安装 TensorFlow。对应实现是 [scripts/setup/setup_review_assets.py](../scripts/setup/setup_review_assets.py)。
 
-如果已经在别处下载了评审资源，可把下列四个同名文件放到 `/mnt/afs_f/liuhongda/music-cover-baseline/cache/review-downloads/`：
+如果已经在别处下载了评审资源，可把下列两个同名文件放到 `/mnt/afs_f/liuhongda/music-cover-baseline/cache/review-downloads/`：
 
 ```text
-mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt
-config_mel_band_roformer_karaoke.yaml
 5c90dfd2-34c22ccb.th
 htdemucs_6s.yaml
 ```
@@ -175,7 +173,7 @@ htdemucs_6s.yaml
 然后改用：
 
 ```bash
-envs/separator/bin/python scripts/setup_review_assets.py \
+envs/separator/bin/python scripts/setup/setup_review_assets.py \
   --local-assets /mnt/afs_f/liuhongda/music-cover-baseline/cache/review-downloads
 ```
 
@@ -280,7 +278,7 @@ PY
 | 已有 Seed-VC 主权重仍不能换声 | 检查 Whisper-small、CAMPPlus、RMVPE、BigVGAN 及 `configs/seed_svc.local.yml` |
 | 迁移后仍引用旧 `/data/...` 路径 | 重新执行换声模型准备脚本生成本机配置；锁文件中的历史绝对路径也应按迁移后的实际位置更新 |
 | 07/09 缺模型，基础歌曲却能生成 | 补齐评审依赖，并执行 `setup_review_assets.py`；只有不需要评审输出时才使用 `--no-review` |
-| BS-RoFormer/Karaoke 权重存在但报配置缺失 | 检查对应 YAML、`audio-separator` 版本及首次加载时的网络/缓存 |
+| 一级 BS-RoFormer 权重存在但报配置缺失 | 检查对应 YAML、`audio-separator` 版本及首次加载时的网络/缓存 |
 | `ffmpeg is not available` | 当前服务器执行 `export PATH="/opt/conda/bin:$PATH"`，再运行预检 |
 | 不知道该下载哪个人物模型 | 零样本路线使用通用 Seed-VC；微调路线加载本地训练导出的 voice.json，两者仍通过 --reference 指定参考片段 |
 

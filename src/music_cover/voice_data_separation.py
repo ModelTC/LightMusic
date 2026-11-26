@@ -25,7 +25,7 @@ from .common.paths import ROOT
 
 TOOL = "music_cover.voice_data_separation"
 VOCALS_MODEL = "model_bs_roformer_ep_317_sdr_12.9755.ckpt"
-LEAD_MODEL = "mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"
+LEAD_MODEL = "lead_duo"
 AUDIO_SUFFIXES = {".wav", ".flac", ".mp3", ".m4a", ".aac", ".ogg", ".opus", ".aiff"}
 ROLES = {"vocals": ("vocals", "instrumental"),
          "lead": ("vocals", "instrumental", "lead", "backing")}
@@ -51,7 +51,7 @@ def parser():
     p.add_argument("--model-dir", default="models/separation")
     p.add_argument("--vocals-model", default=VOCALS_MODEL)
     p.add_argument("--lead-model", default=LEAD_MODEL)
-    p.add_argument("--lead-overlap", type=int, default=4)
+    p.add_argument("--lead-overlap", type=int)
     p.add_argument("--timeout-seconds", type=int, default=10800, help="Per recording")
     p.add_argument("--plan", action="store_true", help="Check and list inputs; write nothing, load no models")
     action = p.add_mutually_exclusive_group()
@@ -91,7 +91,7 @@ def discover(args):
 
 
 def preflight(args):
-    if args.gpu < 0 or not 2 <= args.lead_overlap <= 50 or args.timeout_seconds <= 0:
+    if args.gpu < 0 or (args.lead_overlap is not None and not 2 <= args.lead_overlap <= 50) or args.timeout_seconds <= 0:
         raise ValueError("gpu >= 0, lead-overlap 2..50 and positive timeout-seconds are required")
     for name in ("ffmpeg", "ffprobe"):
         if not shutil.which(name):
@@ -103,7 +103,7 @@ def preflight(args):
     if not torch.cuda.is_available():
         raise ValueError(f"CUDA is unavailable for --gpu {args.gpu} in {sys.executable}")
     models = project_path(args.model_dir)
-    names = [args.vocals_model] + ([args.lead_model] if args.mode == "lead" else [])
+    names = [args.vocals_model] + ([args.lead_model] if args.mode == "lead" and args.lead_model != LEAD_MODEL else [])
     assets = {}
     for name in names:
         if Path(name).name != name:
@@ -118,6 +118,14 @@ def preflight(args):
     if not configs:
         raise ValueError(f"No local separator model YAML configurations in {models}")
     assets.update({p.name: sha256(p) for p in configs})
+    if args.mode == "lead" and args.lead_model == LEAD_MODEL:
+        from .common.resources import resource_data
+        for item in resource_data(ROOT, "lead_duo")["assets"]:
+            path = ROOT / item["path"]
+            if not path.is_file() or sha256(path) != item["sha256"]:
+                raise ValueError(f"Run scripts/setup/download_lead_duo.py to restore {path}")
+            assets[item["path"]] = item["sha256"]
+        assets["lead_implementation"] = sha256(ROOT / "src/music_cover/backends/lead_duo.py")
     return {"model_assets": assets, "implementation_sha256": sha256(__file__),
             "audio_separator_version": importlib.metadata.version("audio-separator"),
             "torch_version": torch.__version__, "mode": args.mode, "sample_rate": 44100,
@@ -294,9 +302,9 @@ def worker(filename):
     settings = request["settings"]
     stages = [("vocals", request["source"], settings["vocals_model"], settings["vocals_overlap"],
                {"Vocals": "vocals", "Instrumental": "instrumental"})]
-    if settings["mode"] == "lead":
+    if settings["mode"] == "lead" and settings["lead_model"] != LEAD_MODEL:
         stages.append(("lead", str(directory / "vocals.wav"), settings["lead_model"],
-                       settings["lead_overlap"], {"Vocals": "lead", "Instrumental": "backing"}))
+                       settings["lead_overlap"] or 4, {"Vocals": "lead", "Instrumental": "backing"}))
     for stage, source, model, overlap, names in stages:
         write_json(directory / "progress.json", {"stage": stage, "status": "running"})
         print(f"[{stage}] model={model}; input={source}", flush=True)
@@ -310,7 +318,11 @@ def worker(filename):
         del separator
         gc.collect()
         torch.cuda.empty_cache()
-    write_json(directory / "progress.json", {"stage": stages[-1][0], "status": "succeeded"})
+    if settings["mode"] == "lead" and settings["lead_model"] == LEAD_MODEL:
+        from .backends.lead_duo import separate_lead
+        write_json(directory / "progress.json", {"stage": "lead", "status": "running"})
+        separate_lead(directory / "vocals.wav", directory, overlap=settings["lead_overlap"])
+    write_json(directory / "progress.json", {"stage": settings["mode"], "status": "succeeded"})
 
 
 def main(argv=None):

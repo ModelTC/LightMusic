@@ -67,6 +67,17 @@ class ModularExecutionTests(unittest.TestCase):
         self.assertEqual(second['status'], 'partial')
         self.assertFalse((self.root / 'run/deliverables').exists())
 
+    def test_arrangement_is_recorded_in_outputs_and_downstream_inputs(self):
+        from music_cover.modules import vocal_separation
+        self.modules[0].TIMELINE = vocal_separation.TIMELINE
+        for mode in ('original', 'generated'):
+            state = self.run_stages(request={**self.request, 'arrangement': mode}, force=True)
+            stage, following = (state['stages'][m.ID] for m in self.modules[:2])
+            self.assertEqual(stage['outputs']['text']['timeline'], mode)
+            for record, filename, role in ((stage, 'outputs.json', 'text'), (following, 'inputs.json', 'input')):
+                manifest = json.loads((Path(record['attempt']) / filename).read_text())
+                self.assertEqual(manifest['artifacts'][role]['timeline'], mode)
+
     def test_missing_dependency_is_not_implicitly_run(self):
         with self.assertRaisesRegex(DependencyError, '00_prepare'):
             self.run_stages(['02_pitch_adaptation'])

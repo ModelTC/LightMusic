@@ -16,7 +16,7 @@ from ..audio import fit_length, inspect_audio, read_at, sha256
 from ..common.paths import ROOT
 from ..common.io import write_json as save_json, artifact_paths
 
-from ..common.review_audio import RATE, KARAOKE, LEAF_ROLES, PITCHED_ROLES, LABELS, stereo_aligned, mix_components, write_stem
+from ..common.review_audio import RATE, LEAF_ROLES, PITCHED_ROLES, LABELS, stereo_aligned, mix_components, write_stem
 
 def write_midi(path, tracks, duration):
     """Seconds-based MIDI, fixed 120 BPM timebase, no musical quantization."""

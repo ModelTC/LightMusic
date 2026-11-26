@@ -2,15 +2,21 @@ import html
 import json
 import shutil
 from pathlib import Path
+from ..audio import sha256
 from .io import write_json
 
-def build_delivery(destination, request, stages, prepared, generated, separated, mixed, adaptation=None, pitch_check=None, review=None):
+def build_delivery(destination, request, stages, prepared, generated, separated, mixed, adaptation=None, pitch_check=None, review=False, *, voice_backend):
     destination.mkdir(exist_ok=True)
+    original_arrangement = request.get('arrangement') == 'original'
+    cover_name = 'transposed_original.wav' if original_arrangement else 'restyled.flac'
+    cover = separated['cover'] if original_arrangement else generated['cover']
     items = {"original.wav": prepared["source"], "reference.wav": prepared["reference"],
-             "restyled.flac": generated["cover"], "reconstruction.wav": mixed["reconstruction"],
+             cover_name: cover, "reconstruction.wav": mixed["reconstruction"],
              "final.wav": mixed["final"], "final.mp3": mixed["final_mp3"],
              "vocals_before.wav": separated["vocals"],
              "vocals_after.wav": mixed["aligned_vocal"], "instrumental.wav": separated["instrumental"]}
+    if 'backing' in separated:
+        items['backing.wav'] = separated['backing']
     if adaptation:
         items.update({"score_original.abc": adaptation["original_score"], "score_transposed.abc": adaptation["score"],
                       "transposition.json": adaptation["plan"], "pitch_input.json": adaptation["profiles"]})
@@ -22,23 +28,26 @@ def build_delivery(destination, request, stages, prepared, generated, separated,
         items["pitch_output.json"] = pitch_check["profiles"]
         if 'adherence' in pitch_check:
             items['pitch_adherence.json'] = pitch_check['adherence']
-    if review:
-        items.update({"review/" + name: path for name, path in review.items()})
     for name, source in items.items():
         temporary = destination / (name + ".tmp")
         temporary.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, temporary)
         temporary.replace(destination / name)
     metrics = json.loads(mixed["metrics"].read_text())
+    metrics['dry_vocal_sha256'] = {
+        'vocals_before.wav': sha256(separated['vocals']),
+        'vocals_after.wav': sha256(mixed['aligned_vocal']),
+    }
     write_json(destination / "checks.json", metrics)
     duration = metrics["final"]["duration_s"]
     times = "\n".join(f"| {name} | {stage['wall_seconds']:.1f} |"
                       for name, stage in stages.items() if stage["status"] == "succeeded")
+    arrangement = "保留原曲编排" if original_arrangement else f"目标风格：{request['style']}"
     report = (
         f"完整流程已执行，输出 {duration:.2f} 秒、48 kHz 立体声。\n\n"
         "自动文件、数值、时长与峰值检查已执行；音乐风格、音色相似度和自然度仍需试听验收。\n\n"
-        f"目标风格：{request['style']}\n\n"
-        "依次试听 original.wav、restyled.flac、final.wav；参考人物声音在 reference.wav。"
+        f"{arrangement}。换声后端：{voice_backend}。\n\n"
+        f"依次试听 original.wav、{cover_name}、final.wav；参考人物声音在 reference.wav。"
         f"final.mp3 是同一最终混音的 {metrics['final_mp3']['bitrate_kbps']} kbps 压缩版，便于下载和分享。"
         "reconstruction.wav 用于检查分离和重混的损伤。\n\n"
         f"转换人声长度差：{metrics['alignment']['converted_duration_delta_s']:.6f} 秒。"
@@ -58,25 +67,25 @@ def build_delivery(destination, request, stages, prepared, generated, separated,
         checks = plan["score_checks"]
         report += (f"\n本次谱面整体移调 {plan['selected_semitones']:+d} 个半音："
                    f"{checks['source_key']} → {checks['target_key']}。人声及器乐音符均已移调，"
-                   "音符起点、时值、节拍和速度通过逐事件检查。Seed-VC 不再额外移调。\n\n"
+                   "音符起点、时值、节拍和速度通过逐事件检查。05 换声沿用输入主唱的调性。\n\n"
                    "参考观测音区不代表歌手完整音域；自动选调为启发式建议。"
                    "选择依据见 pitch_report.html、transposition.json；其中的 source_quality/reference_quality 是本算法实际使用的统计。"
                    "pitch_input.json 保留后端旧统计口径，仅供对照。"
-                   "谱面检查不保证生成歌声逐音遵循；仍需检查开头是否改善以及高音是否自然。\n")
+                   "请对照目标调主唱试听旋律走向与高音自然度。\n")
         if 'recommended_semitones' in plan:
             report += (f"\n统计推荐 {plan['recommended_semitones']}；实际采用 {plan['applied_semitones']:+d} 半音；"
                        f"状态 {plan['status']}；可信度 {plan['confidence']}。详见 pitch_report.html。\n")
     if pitch_check and 'adherence' in pitch_check:
         adherence = json.loads(pitch_check['adherence'].read_text())
-        report += f"\n生成音频与换声音高核验：{adherence['status']}，详见 pitch_adherence.json。技术流程成功不等于音高遵循或听感通过。\n"
+        report += f"\n换声前后音高核验：{adherence['status']}，详见 pitch_adherence.json。技术流程成功不等于音高遵循或听感通过。\n"
     if review:
-        report += ("\n成品分轨和 MIDI 评审包已生成，入口 review/index.html。\n"
+        report += ("\n成品分轨和 MIDI 评审包已生成，入口 review/index.html。人工评分请填写运行目录 reviews 中的副本。\n"
                    "所有 review/audio 轨道均同起点、同采样率、同长度；父轨不能与子轨重复相加。\n"
                    "MIDI 来自成品重新转谱，自动估计仍需专业人员校对；鼓为起音候选，和弦谱为分析指南。\n"
                    "音符 CSV、原始模型数据、校验哈希、响度/节奏描述和人工评分表均包含在 review。\n")
     (destination / "report.md").write_text(report, encoding="utf-8")
     labels = [("original.wav", "1 原曲"), ("reference.wav", "目标音色参考"),
-              ("restyled.flac", "2 换风格"), ("final.wav", "3 最终混音（WAV）"),
+              (cover_name, "2 原编曲（目标调）" if original_arrangement else "2 换风格"), ("final.wav", "3 最终混音（WAV）"),
               ("final.mp3", "最终混音（MP3）"),
               ("reconstruction.wav", "分离后直接重混对照"),
               ("vocals_before.wav", "换声前人声"), ("vocals_after.wav", "换声后人声")]
@@ -89,6 +98,6 @@ def build_delivery(destination, request, stages, prepared, generated, separated,
             '<h1>音乐 baseline 试听</h1><p>完整流程已执行；听感质量请对照以下音频验收。</p>'
             + ('<p><a href="review/index.html">打开成品分轨与 MIDI 专业评审包</a></p>' if review else '')
             + ('<p><a href="pitch_report.html">双向选调报告与移调 MIDI</a></p>' if adaptation and 'report' in adaptation else '')
-            + ('<p><a href="pitch_adherence.json">生成与换声音高核验</a></p>' if pitch_check and 'adherence' in pitch_check else '')
+            + ('<p><a href="pitch_adherence.json">换声前后音高核验</a></p>' if pitch_check and 'adherence' in pitch_check else '')
             + players + '<details><summary>运行报告</summary><pre>' + html.escape(report) + '</pre></details></html>')
     (destination / "listen.html").write_text(page, encoding="utf-8")
