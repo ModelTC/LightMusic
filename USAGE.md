@@ -30,6 +30,7 @@ bash scripts/run_baseline.sh --config "$VC_TASK" --run "$VC_SONG_RUN" --until 06
 bash scripts/00_prepare/run.sh --config "$VC_TASK" --run "$VC_SONG_RUN" --gpu 0
 bash scripts/01_source_score/run.sh --run "$VC_SONG_RUN" --gpu 0
 bash scripts/02_pitch_adaptation/run.sh --run "$VC_SONG_RUN" --gpu 0
+# 仅生成编曲执行 03。原编曲从 02 接到 04。
 bash scripts/03_style_generation/run.sh --run "$VC_SONG_RUN" --gpu 0
 bash scripts/04_vocal_separation/run.sh --run "$VC_SONG_RUN" --gpu 0
 # 选择下一节的一条 05 命令，再执行 06。
@@ -88,7 +89,7 @@ bash scripts/run_baseline.sh --run "$VC_SONG_RUN" --status
 
 - 主流程状态：`stage_state.json`；训练状态：`state.json`。
 - attempt 内有 `command.json`、`process.log`、`outputs.json`，失败时有 `failure.json`。
-- 04 输出 `vocals.wav`、`instrumental.wav`；05 输出 `converted.wav` 和候选报告；06 输出 `final.wav`、`final.mp3`、`mix.json`。
+- 04 的 `outputs.json` 登记目标调主唱（`vocals`）、伴唱、纯乐器及混音底轨。主唱对应 `lead.wav` 或非零移调后的 `vocals_transposed.wav`；一级分离的 `vocals.wav` 是总人声。05 输出 `converted.wav`，候选模式另有候选报告。06 输出 `final.wav`、`final.mp3` 和 `mix.json`。
 - 主流程 `--force` 创建新 attempt，保留旧文件；不要改写已封存产物。
 - 复制试听文件时核对源 SHA256、profile、模型模式与目标音色，防止同名文件串版。
 - 评分不合格和执行失败不同，候选推荐不代表人工试听通过。
@@ -99,4 +100,11 @@ bash scripts/run_baseline.sh --run "$VC_SONG_RUN" --status
 
 先运行 `python3 scripts/setup/download_lead_duo.py` 安装双模型权重、配置和匹配的推理源码。默认生成模式保持 03 生成的调性。04 将总人声进一步拆成主唱与伴唱，05 只读取主唱，06 混回保留的伴唱和乐器。
 
-配置 `request.arrangement: original` 或传 `--arrangement original` 可以沿用原曲编排。02 选调后，04 在原调完成分离，再对主唱、伴唱与乐器使用相同半音数。非零移调需要 PATH 中有支持 R3 的 Rubber Band CLI（验证版本 3.3.0）和带 rubberband 滤镜的 FFmpeg。主唱使用 `rubberband -3 -F --centre-focus`，零移调直接保留音频。该模式跳过 03，其余分析及交付遵循 review 设置。
+要沿用原曲编排，可传 `--arrangement original`，或在任务 YAML 的 `request` 下添加 `arrangement` 字段。
+
+```yaml
+request:
+  arrangement: original
+```
+
+02 选调后，04 在原调完成分离，再对主唱、伴唱与乐器使用相同半音数。非零移调需要 PATH 中有支持 R3 的 Rubber Band CLI（验证版本 3.3.0）和带 rubberband 滤镜的 FFmpeg。主唱使用 `rubberband -3 -F --centre-focus`，零移调直接保留音频。该模式跳过 03，完整运行会执行 10 评估和 11 交付。`--no-review` 跳过 07–09 和 11 中的附加评审包。

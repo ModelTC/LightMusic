@@ -26,7 +26,7 @@
 
 ## 1. base 与模型预检
 
-输入：已部署的 Fish、ContentVec、NSF-HiFiGAN、ECAPA/RMVPE。原始录音分离另需 BS-RoFormer 和 Karaoke 模型及 YAML。
+输入：已部署的 Fish、ContentVec、NSF-HiFiGAN、ECAPA/RMVPE。原始录音分离另需 BS-RoFormer 和 anvuew + Frazer 模型及 YAML。
 
 ```bash
 cd /data/liuhongda/music-cover-baseline
@@ -59,7 +59,7 @@ bash scripts/voice_data/separate/run.sh \
   --exclude-ids 1787247852 6779157198 --gpu 0
 ```
 
-输入：原始录音；BS-RoFormer→Karaoke 两级分离。`1787247852` 是单独参考《续写》，`6779157198` 是此前未筛出合格训练窗口的《你的珍藏》。这些编号仅适用于本数据，不是程序写死规则。
+输入：原始录音；BS-RoFormer→anvuew + Frazer 两级分离。`1787247852` 是单独参考《续写》，`6779157198` 是此前未筛出合格训练窗口的《你的珍藏》。这些编号仅适用于本数据，不是程序写死规则。
 
 预期：28 份成功、2 份排除，recordings/manifest.json 的 status=succeeded。每个编号下有 lead.wav、vocals.wav、instrumental.wav、backing.wav、separation.json；训练使用 **lead.wav**。试听检查主唱及分离残留。中断后原命令加 `--resume`，改变素材集合改用新输出目录。当前原素材是有损试听，不是录音棚干声。
 

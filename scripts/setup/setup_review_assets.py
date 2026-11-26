@@ -13,10 +13,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-KARAOKE = "mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"
 ASSETS = [
-    ("models/separation/" + KARAOKE, "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/" + KARAOKE),
-    ("models/separation/config_mel_band_roformer_karaoke.yaml", "https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/config_mel_band_roformer_karaoke.yaml"),
     ("models/review/demucs/5c90dfd2-34c22ccb.th", "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/5c90dfd2-34c22ccb.th"),
     ("models/review/demucs/htdemucs_6s.yaml", "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/htdemucs_6s.yaml"),
 ]

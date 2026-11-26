@@ -6,7 +6,7 @@ ID = '05_voice_conversion'
 CONTRACT_VERSION = 5
 DEFAULTS = {'timeout_seconds': 10800, 'backend': 'seed_vc', 'mode': 'zero_shot', 'voice_profile': None, 'reference_policy': 'task', 'candidate_count': 3, 'candidate_seeds': None, 'svc': {}, 'rvc': {}, 'fish': {}}
 CODE = ['audio.py', 'voice.py', 'lora.py', 'voice_weights.py', 'voice_candidates.py', 'common/voice_profiles.py', 'common/voice_paths.py', 'backends/seed_vc.py', 'backends/cli.py', 'backends/seed_vc_runtime.py', 'backends/voice_candidates.py', 'backends/voice_metrics.py', 'voice_alignment.py', 'pitch_selection.py', 'pitch_validation.py', 'svc.py', 'backends/so_vits_svc.py', 'backends/svc_contentvec.py', 'rvc.py', 'backends/rvc.py', 'fish.py', 'backends/fish_diffusion.py']
-TIMELINE = {'*': 'generated_before_alignment'}
+TIMELINE = {'*': '{arrangement}_before_alignment'}
 def backends(r, c): return [c.get('backend', 'seed_vc')] + (['voice_metrics'] if c.get('mode') in {'finetuned', 'lora'} else [])
 def requires(r): return ['00_prepare', '04_vocal_separation']
 def inputs(ctx):

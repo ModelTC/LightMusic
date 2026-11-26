@@ -37,10 +37,9 @@ def estimate(network, audio, chunk, overlap):
     return total / weights[:, None]
 
 
-def lead(args):
+def separate_lead(source, output, *, overlap=None):
     directory = ROOT / 'models/LeadDuo'
-    # The runner launches each backend operation in its own interpreter.
-    # Verify the downloaded Python sources even when --preflight was omitted.
+    # Verify the pinned source before importing it, including when preflight was skipped.
     for item in resource_data(ROOT, 'lead_duo')['assets']:
         path = ROOT / item['path']
         if sha256(path) != item['sha256']:
@@ -48,7 +47,7 @@ def lead(args):
     sys.path.insert(0, str(directory / 'msst'))
     from models.bs_roformer.bs_roformer import BSRoformer
 
-    audio, rate = sf.read(args.input, dtype='float32', always_2d=True)
+    audio, rate = sf.read(source, dtype='float32', always_2d=True)
     if rate != 44100 or audio.shape[1] != 2 or not len(audio):
         raise ValueError('Lead separation requires nonempty 44.1 kHz stereo audio')
     result = np.zeros_like(audio)
@@ -57,8 +56,14 @@ def lead(args):
         network = BSRoformer(**{**settings['model'], 'use_torch_checkpoint': False})
         network.load_state_dict(torch.load(directory / checkpoint, weights_only=True, map_location='cpu'))
         network.eval().cuda()
-        result += estimate(network, audio, settings['audio']['chunk_size'], settings['inference']['num_overlap'])
+        result += estimate(network, audio, settings['audio']['chunk_size'], settings['inference']['num_overlap'] if overlap is None else overlap)
         del network
     if not np.isfinite(result).all():
         raise ValueError('Nonfinite lead estimate')
-    sf.write(Path(args.output) / 'lead.wav', result / len(MODELS), rate, subtype='FLOAT')
+    result /= len(MODELS)
+    sf.write(Path(output) / 'lead.wav', result, rate, subtype='FLOAT')
+    sf.write(Path(output) / 'backing.wav', audio - result, rate, subtype='FLOAT')
+
+
+def lead(args):
+    separate_lead(args.input, args.output)

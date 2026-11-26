@@ -34,7 +34,7 @@ bash scripts/10_evaluation/run.sh \
 | `06_mix` | `06_mix/attempt_001/artifacts/final.wav` | 成品音频指标与重建对照 |
 | `06_mix` | `06_mix/attempt_001/artifacts/final.mp3` | MP3 时长及哈希检查 |
 | `06_mix` | `06_mix/attempt_001/artifacts/mix.json` | 混音指标和预期哈希 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/lead.wav` | 启用 pitch_check 且 transpose 非 0 时，检查换声前 F0 |
+| `04_vocal_separation` | 04 的 `vocals` 角色：生成编曲或原编曲零移调取 `lead.wav`，原编曲非零移调取 `vocals_transposed.wav` | 启用 pitch_check 且 transpose 非 0 时，检查换声前 F0 |
 | `06_mix` | `06_mix/attempt_001/artifacts/converted_aligned.wav` | 启用 pitch_check 且 transpose 非 0 时，检查换声后 F0 |
 | `07_stem_separation` | `07_stem_separation/attempt_001/artifacts/` | review=true 时纳入全部分轨产物，检查轨道重建 |
 | `08_final_score` | `08_final_score/attempt_001/artifacts/` | review=true 时纳入成品转谱产物的依赖校验 |

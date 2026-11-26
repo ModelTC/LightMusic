@@ -28,8 +28,9 @@ bash scripts/07_stem_separation/run.sh \
 | --- | --- | --- |
 | `06_mix` | `06_mix/attempt_001/artifacts/final.wav` | 最终混音，用于时间轴及重建对照 |
 | `06_mix` | `06_mix/attempt_001/artifacts/converted_aligned.wav` | 转换且已对齐的人声 |
+| `06_mix` | `backing_post_gain.wav` | 已匹配成品增益的原音色伴唱 |
 | `06_mix` | `06_mix/attempt_001/artifacts/mix.json` | 混音增益与对齐信息 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/instrumental.wav` | 用于乐器拆分的伴奏 |
+| `04_vocal_separation` | `instrumental` 角色（`instrumental.wav` 或 `instrumental_transposed.wav`） | 用于乐器拆分的伴奏 |
 
 ## 本模块输出
 

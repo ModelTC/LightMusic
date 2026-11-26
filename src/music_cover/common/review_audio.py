@@ -17,7 +17,6 @@ from .paths import ROOT
 from .io import write_json as save_json, artifact_paths
 
 RATE = 48000
-KARAOKE = "mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"
 LEAF_ROLES = ("lead_vocals", "backing_vocals", "drums", "bass", "guitar", "piano",
               "other", "instrumental_vocal_leak", "instrumental_residual", "mix_residual")
 PITCHED_ROLES = {"lead_vocals": 53, "backing_vocals": 52, "vocals": 53,

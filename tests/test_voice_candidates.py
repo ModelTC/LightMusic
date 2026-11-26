@@ -88,7 +88,8 @@ class MixDeliveryTests(unittest.TestCase):
             rows.append({'id':name,'seed':41+n,'status':'succeeded','eligible':True,'metrics':metrics(score),
                          'audio':str(p.relative_to(self.raw)),'audio_sha256':sha256(p),'rejection_reasons':[]})
         self.report={'candidates':rows,'recommended_id':'candidate_002'};write_json(self.raw/'candidates.json',self.report)
-        self.i={'cover':self.raw/'cover.wav','vocals':self.raw/'vocals.wav','instrumental':self.raw/'backing.wav',
+        sf.write(self.raw/'harmony.wav', np.zeros_like(backing), 48000, subtype='FLOAT')
+        self.i={'mix_bed':self.raw/'backing.wav', 'backing':self.raw/'harmony.wav', 'cover':self.raw/'cover.wav','vocals':self.raw/'vocals.wav','instrumental':self.raw/'backing.wav',
                 'converted':self.raw/rows[1]['audio'],'candidate_report':self.raw/'candidates.json'}
     def tearDown(self):self.temp.cleanup()
     def test_three_real_mp3_and_delivery_recommendation(self):
@@ -107,14 +108,13 @@ class MixDeliveryTests(unittest.TestCase):
             for key in ['final','final_mp3']:shutil.copy2(mixed[key],out/mixed[key].name)
             (out/'listen.html').write_text('<h1>listen</h1>');(out/'report.md').write_text('report\n')
         from music_cover.common.paths import RunPaths
-        ctx=SimpleNamespace(request={'transpose':'0','review':False},state={'stages':{}},config={},execute=lambda *a:None,
+        ctx=SimpleNamespace(request={'transpose':'0','review':False},state={'stages':{}},config={'05_voice_conversion':{'backend':'seed_vc'}},execute=lambda *a:None,
                             paths=RunPaths(self.root,self.root/'run'))
         with patch.object(delivery,'build_delivery',build):delivery.run(ctx,target,inputs,{})
         self.assertEqual(sha256(target/'final.mp3'),sha256(target/selected['final_mp3']))
         self.assertIn('candidates.html',(target/'listen.html').read_text())
         self.assertEqual(len(list((target/'candidates').rglob('final.mp3'))),3)
     def test_retained_harmony_and_pure_instruments_stay_separate_at_delivery(self):
-        from music_cover.common.delivery import build_delivery
         from music_cover.common.validation import verify_delivery
         instrument, rate = sf.read(self.i['instrumental'], dtype='float32')
         harmony = instrument[:, ::-1] * .5
@@ -124,16 +124,30 @@ class MixDeliveryTests(unittest.TestCase):
         mixed = mix.run(None, self.out, inputs, mix.DEFAULTS)
         delivery_dir = self.root/'result'
         source = self.i['cover']
-        build_delivery(delivery_dir, {'arrangement':'original','style':'','song':str(source)}, {},
-                       {'source':source,'reference':source}, {},
-                       {'vocals':self.i['vocals'],'backing':inputs['backing'],
-                        'instrumental':inputs['instrumental'],'cover':source}, mixed)
+        from music_cover.common.paths import RunPaths
+        request = {'arrangement':'original', 'song':str(source), 'transpose':'0', 'review':False}
+        evaluation = self.root/'evaluation.json'
+        write_json(evaluation, {})
+        ctx = SimpleNamespace(request=request, state={'stages':{}}, paths=RunPaths(self.root, self.root/'run'),
+                              config={'05_voice_conversion':{'backend':'rvc'}}, execute=lambda *args: None)
+        delivery_inputs = {'00_prepare/source':source, '00_prepare/reference':source,
+                           '04_vocal_separation/vocals':self.i['vocals'], '04_vocal_separation/backing':inputs['backing'],
+                           '04_vocal_separation/instrumental':inputs['instrumental'], '04_vocal_separation/cover':source,
+                           '10_evaluation/evaluation.json':evaluation}
+        delivery_inputs.update({'06_mix/'+role:path for role,path in mixed.items()})
+        delivery_dir.mkdir()
+        delivery.run(ctx, delivery_dir, delivery_inputs, {})
+        self.assertIn('换声后端：rvc', (delivery_dir/'report.md').read_text())
         import shutil
-        for role in ('vocal_post_gain','instrumental_post_gain','backing_post_gain','residual'):
-            shutil.copyfile(mixed[role], delivery_dir/mixed[role].name)
         self.assertTrue(verify_delivery(delivery_dir, review=False)['post_gain_roles_verified'])
         self.assertEqual(sha256(delivery_dir/'instrumental.wav'),sha256(inputs['instrumental']))
         self.assertEqual(sha256(delivery_dir/'transposed_original.wav'),sha256(source))
+        for filename in ('vocals_before.wav', 'vocals_after.wav'):
+            original = (delivery_dir/filename).read_bytes()
+            shutil.copyfile(inputs['mix_bed'], delivery_dir/filename)
+            with self.assertRaisesRegex(ValueError, filename):
+                verify_delivery(delivery_dir, review=True)
+            (delivery_dir/filename).write_bytes(original)
         shutil.copyfile(inputs['mix_bed'], delivery_dir/'instrumental.wav')
         with self.assertRaisesRegex(ValueError,'instrumental differs'):
             verify_delivery(delivery_dir, review=False)

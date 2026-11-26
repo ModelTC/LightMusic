@@ -2,7 +2,7 @@ from ..common.io import write_json, artifact_paths
 ID = '07_stem_separation'
 DEFAULTS = {'timeout_seconds': 10800}
 CODE = ['audio.py', 'common/review_audio.py', 'backends/review_stems.py']
-TIMELINE = {'*': 'generated'}
+TIMELINE = {'*': '{arrangement}'}
 def backends(r, c): return ['review_stems']
 def requires(r): return ['04_vocal_separation', '06_mix']
 def inputs(ctx): return {'final': ctx.output('06_mix', 'final'), 'vocal': ctx.output('06_mix', 'aligned_vocal'),

@@ -8,7 +8,7 @@
 
 以下示例统一使用“单依纯参考音色＋绿洲”，运行目录为 `runs/lhd_lv_zhou_shan_yi_chun_modular_test`。各模块使用同一个 `--run`，串联同一首歌曲的中间产物。
 
-前置条件：同一个运行目录中，下列直接依赖及其上游已成功完成，且产物和参数仍有效：[03_style_generation](../03_style_generation/README.md)、[04_vocal_separation](../04_vocal_separation/README.md)、[05_voice_conversion](../05_voice_conversion/README.md)。
+两种模式都需要同一次运行中有效的 [04 分离](../04_vocal_separation/README.md) 和 [05 换声](../05_voice_conversion/README.md) 产物。生成编曲还会读取 [03](../03_style_generation/README.md) 的整曲作为对照。
 
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
@@ -28,9 +28,11 @@ bash scripts/06_mix/run.sh \
 
 | 上游模块 | 中间产物路径 | 本模块用途 |
 | --- | --- | --- |
-| `03_style_generation` | `03_style_generation/attempt_001/artifacts/generated/audio.flac` | 生成歌曲的长度及音频对照 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/lead.wav` | 换声前人声，用于对齐与增益参考 |
-| `04_vocal_separation` | `04_vocal_separation/attempt_001/artifacts/instrumental.wav` | 纯乐器输入，另读 `backing` 与 `mix_bed` 角色用于保留伴唱和回混 |
+| `03_style_generation` | `03_style_generation/attempt_001/artifacts/generated/audio.flac` | 生成编曲的长度及音频对照 |
+| `04_vocal_separation` | `cover.wav` | 原编曲的长度及目标调音频对照 |
+| `04_vocal_separation` | 04 的 `vocals` 角色：生成编曲或原编曲零移调取 `lead.wav`，原编曲非零移调取 `vocals_transposed.wav` | 换声前人声，用于对齐与增益参考 |
+| `04_vocal_separation` | `instrumental`、`backing` | 目标调纯乐器和伴唱，分别写出增益后分轨 |
+| `04_vocal_separation` | `mix_bed.wav` | 含伴唱与乐器的混音底轨，与换声主唱相加 |
 | `05_voice_conversion` | `05_voice_conversion/attempt_001/artifacts/converted.wav` | 转换后人声 |
 
 ## 本模块输出

@@ -110,6 +110,21 @@ class TrainingConfigTests(unittest.TestCase):
         self.assertNotEqual(checked["mix_bed"]["sha256"], checked["instrumental"]["sha256"])
         self.assertTrue(checked["mix_bed"]["path"].endswith("/mix_bed.wav"))
 
+    def test_mix_bed_manifest_and_stage_state_must_agree(self):
+        stage = '04_vocal_separation'
+        for has_bed in (False, True):
+            with self.subTest(has_bed=has_bed):
+                fixture(self.root, mix_bed=has_bed)
+                def contradict(state):
+                    outputs = state['stages'][stage]['outputs']
+                    if has_bed:
+                        del outputs['mix_bed']
+                    else:
+                        outputs['mix_bed'] = outputs['instrumental']
+                self.edit('runs/song/stage_state.json', contradict)
+                with self.assertRaisesRegex(ValueError, 'role differs.*mix_bed'):
+                    config.build_config(self.args)
+
     def test_plan_is_read_only(self):
         before = self.snapshot()
         with contextlib.redirect_stdout(io.StringIO()) as stream:

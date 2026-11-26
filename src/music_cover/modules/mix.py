@@ -13,7 +13,7 @@ ID = '06_mix'
 CONTRACT_VERSION = 3
 DEFAULTS = {'timeout_seconds': 10800, 'mp3_bitrate_kbps': 192}
 CODE = ['audio.py', 'voice_candidates.py', 'voice_alignment.py', 'voice_mixing.py']
-TIMELINE = {'*': 'generated'}
+TIMELINE = {'*': '{arrangement}'}
 def backends(r, c): return []
 def cover_stage(request):
     return '04_vocal_separation' if request.get('arrangement') == 'original' else '03_style_generation'
@@ -35,9 +35,8 @@ def params(r, c):
 
 
 def run(ctx, out, i, p):
-    result = mix_tracks(i['cover'], i['vocals'], i.get('mix_bed', i['instrumental']), i['converted'], out, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
-    if 'backing' in i:
-        result['vocal_routing'] = 'converted_lead_retained_backing'
+    result = mix_tracks(i['cover'], i['vocals'], i['mix_bed'], i['converted'], out, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
+    result['vocal_routing'] = 'converted_lead_retained_backing'
     write_json(out / 'mix.json', result)
     frames = result['final']['frames']
     gain = result['final']['master_gain']
@@ -46,17 +45,15 @@ def run(ctx, out, i, p):
     sf.write(out / 'vocal_post_gain.wav', vocal, 48000, subtype='FLOAT')
     sf.write(out / 'instrumental_post_gain.wav', instrumental, 48000, subtype='FLOAT')
     residual = read_at(out / 'final.wav') - vocal - instrumental
-    if 'backing' in i:
-        backing = fit_length(read_at(i['backing']), frames) * gain
-        sf.write(out / 'backing_post_gain.wav', backing, 48000, subtype='FLOAT')
-        residual -= backing
+    backing = fit_length(read_at(i['backing']), frames) * gain
+    sf.write(out / 'backing_post_gain.wav', backing, 48000, subtype='FLOAT')
+    residual -= backing
     sf.write(out / 'mix_residual.wav', residual, 48000, subtype='FLOAT')
     paths = {'final': out / 'final.wav', 'final_mp3': out / 'final.mp3', 'reconstruction': out / 'reconstruction.wav',
             'aligned_vocal': out / 'converted_aligned.wav', 'metrics': out / 'mix.json',
             'vocal_post_gain': out / 'vocal_post_gain.wav', 'instrumental_post_gain': out / 'instrumental_post_gain.wav', 'residual': out / 'mix_residual.wav'}
 
-    if 'backing' in i:
-        paths['backing_post_gain'] = out / 'backing_post_gain.wav'
+    paths['backing_post_gain'] = out / 'backing_post_gain.wav'
     if 'candidate_report' in i:
         report = json.loads(i['candidate_report'].read_text())
         selected = select_output(report['candidates'])
@@ -79,7 +76,7 @@ def run(ctx, out, i, p):
                 for name in ('final.wav', 'final.mp3', 'mix.json'): shutil.copy2(out / name, folder / name)
             else:
                 try:
-                    candidate_mix = mix_tracks(i['cover'], i['vocals'], i.get('mix_bed', i['instrumental']), audio, folder, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
+                    candidate_mix = mix_tracks(i['cover'], i['vocals'], i['mix_bed'], audio, folder, mp3_bitrate_kbps=p['mp3_bitrate_kbps'])
                     write_json(folder / 'mix.json', candidate_mix)
                 except (ValueError, subprocess.SubprocessError) as error:
                     row.update(mix_status='failed', mix_error=str(error))

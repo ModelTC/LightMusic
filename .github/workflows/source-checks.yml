@@ -30,3 +30,12 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_lora*.py' -v
       - name: Publication checker contracts
         run: python -m unittest discover -s tests -p 'test_release_checks.py' -v
+      - name: Install audio tools and CPU PyTorch for cover regressions
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg rubberband-cli
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.8.0'
+      - name: Lead separation, mix delivery and training input contracts
+        env:
+          PYTHONPATH: src:tests
+        run: python -m unittest -v test_lead_duo test_lead_stems test_voice_candidates test_voice_training_config

@@ -14,9 +14,10 @@ import numpy as np
 import soundfile as sf
 from ..audio import fit_length, inspect_audio, read_at, sha256
 from ..common.paths import ROOT
+from ..common.resources import resource_data
 from ..common.io import write_json as save_json, artifact_paths
 
-from ..common.review_audio import RATE, KARAOKE, LEAF_ROLES, PITCHED_ROLES, LABELS, stereo_aligned, mix_components, write_stem
+from ..common.review_audio import RATE, LEAF_ROLES, PITCHED_ROLES, LABELS, stereo_aligned, mix_components, write_stem
 
 def separate_review(request, output):
     import torch
@@ -46,30 +47,19 @@ def separate_review(request, output):
             write_stem(stems, role, data)
         del residual
 
-        from audio_separator.separator import Separator
-        print("[review] Separating converted vocal into estimated lead/backing", flush=True)
-        raw = output / "_karaoke"
-        raw.mkdir()
-        old_cwd = Path.cwd()
-        try:
-            os.chdir(raw)
-            separator = Separator(model_file_dir=str(ROOT / "models/separation"), output_dir=str(raw),
-                                  output_format="WAV", normalization_threshold=1.0,
-                                  amplification_threshold=0.0, sample_rate=44100, use_soundfile=True,
-                                  mdxc_params={"segment_size": 256, "override_model_segment_size": False,
-                                               "batch_size": 1, "overlap": 4, "pitch_shift": 0})
-            separator.load_model(model_filename=KARAOKE)
-            separator.separate(str(stems / "vocals.wav"), {"Vocals": "lead", "Instrumental": "backing"})
+        # Legacy requests carry converted vocals without a retained backing stem.
+        from tempfile import TemporaryDirectory
+        from ..audio import decode
+        from ..common.resources import python_for
+        with TemporaryDirectory(dir=output) as temporary:
+            raw = Path(temporary)
+            source = raw / "total.wav"
+            decode(stems / "vocals.wav", source, rate=44100)
+            subprocess.run([python_for(ROOT, "lead_duo"), "-m", "music_cover.backends.cli", "lead",
+                            "--input", source, "--output", raw], check=True)
             lead = stereo_aligned(raw / "lead.wav", frames)
             write_stem(stems, "lead_vocals", lead)
-            # The karaoke model predicts lead; remainder can include reverb and bleed.
             write_stem(stems, "backing_vocals", voices - lead)
-            del separator, lead
-        finally:
-            os.chdir(old_cwd)
-        shutil.rmtree(raw)
-        gc.collect()
-        torch.cuda.empty_cache()
 
     print("[review] Separating final accompaniment using Demucs 6s", flush=True)
     model = get_model("htdemucs_6s", repo=ROOT / "models/review/demucs").eval().to("cuda")
@@ -114,7 +104,12 @@ def separate_review(request, output):
     if maximum > 2e-6:
         raise RuntimeError(f"Leaf stems do not reconstruct final.wav: max error {maximum}")
     sf.write(output / "stems_recombined.wav", total, RATE, subtype="FLOAT")
-    lock = json.loads((ROOT / "configs/review_models.lock.json").read_text())
+    models = resource_data(ROOT, "review_stems")
+    vocal_source = "04 lead separation via 06 post-gain stems"
+    if "backing_post_gain" not in request:
+        models = {"assets": models["assets"] + resource_data(ROOT, "lead_duo")["assets"]}
+        vocal_source = "07 lead separation of converted vocals"
+
     save_json(output / "stems.json", {
         "schema_version": 1, "input_final_sha256": sha256(request["final"]),
         "sample_rate": RATE, "frames": frames, "duration_s": frames / RATE,
@@ -123,7 +118,7 @@ def separate_review(request, output):
         "reconstruction": {"max_abs_error": maximum, "rms_error": float(np.sqrt(np.mean(error ** 2))),
                            "includes_residuals": True, "proves_separation_quality": False},
         "mix_gains": {"master_gain": metrics["final"]["master_gain"], "vocal_gain": metrics["vocal_gain"]},
-        "models": lock,
+        "models": models, "vocal_source": vocal_source,
         "limitations": ["Model estimates, not original recording stems; leakage is possible.",
                         "Backing vocal estimate can contain lead reverb or artifacts, not proof of harmony singers.",
                         "Other can contain synths/strings; a named stem does not prove that instrument is present.",

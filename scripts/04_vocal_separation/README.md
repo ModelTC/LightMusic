@@ -1,4 +1,4 @@
-# 04_vocal_separation · 分离生成歌曲的人声和伴奏
+# 04_vocal_separation · 提取主唱、伴唱与纯乐器
 
 先用 BS-RoFormer 拆分总人声和纯乐器，再以 anvuew 与 Frazer 两个 Karaoke 模型的等权平均波形估计主唱。伴唱取总人声减主唱。
 
@@ -9,7 +9,7 @@
 
 以下示例统一使用“孙燕姿参考音色＋秋意浓＋Synthwave / Dance-pop”，运行目录为 `runs/qiu_yi_nong_modular_test`。各模块使用同一个 `--run`，串联同一首歌曲的中间产物。
 
-前置条件：同一个运行目录中，下列直接依赖及其上游已成功完成，且产物和参数仍有效：[03_style_generation](../03_style_generation/README.md)。
+生成编曲依赖 [03_style_generation](../03_style_generation/README.md)。原编曲依赖 [00_prepare](../00_prepare/README.md) 的原曲与 [02_pitch_adaptation](../02_pitch_adaptation/README.md) 的选调计划。
 
 本例沿用 00 创建的运行目录，自动读取其中已保存的请求与模块配置。只执行当前模块，不自动补跑上游。
 
@@ -29,7 +29,9 @@ bash scripts/04_vocal_separation/run.sh \
 
 | 上游模块 | 中间产物路径 | 本模块用途 |
 | --- | --- | --- |
-| `03_style_generation` | `03_style_generation/attempt_001/artifacts/generated/audio.flac` | 已完成曲风转换的歌曲 |
+| `03_style_generation` | `03_style_generation/attempt_001/artifacts/generated/audio.flac` | 生成编曲的分离输入 |
+| `00_prepare`、`02_pitch_adaptation` | `source.wav`、`transposition.json` | 原编曲的音频与选定半音数 |
+| `02_pitch_adaptation` | `source_separation/vocals.wav`、`source_separation/instrumental.wav` | 原编曲且请求 auto 或显式非零移调时，04 直接读取 02 的一级分离结果 |
 
 ## 本模块输出
 
@@ -37,11 +39,12 @@ bash scripts/04_vocal_separation/run.sh \
 
 | 文件 / 目录 | 内容及下游用途 |
 | --- | --- |
-| `vocals.wav` | 第一级分出的总人声（生成模式） |
-| `lead.wav`、`backing.wav` | 原调主唱与伴唱；05 通过 `vocals` 角色获取最终调性的主唱 |
-| `mix_bed.wav` | 供 06 混音的伴唱加乐器底轨 |
-| `instrumental.wav` | 伴奏；供 06 混音、07 乐器分轨 |
-| `separation_input.wav` | 本模块实际使用的分离输入 |
+| `separation_input.wav`、`vocals.wav` | 04 自行执行一级分离时的输入与总人声。复用 02 分轨时从 02 读取总人声 |
+| `lead.wav`、`backing.wav` | 分离所得主唱和伴唱。实际移调为零时直接作为下游的 `vocals`、`backing` |
+| `instrumental.wav` | 纯乐器。实际移调为零时作为下游的 `instrumental` |
+| `vocals_transposed.wav`、`backing_transposed.wav`、`instrumental_transposed.wav` | 原编曲实际非零移调时，分别作为目标调的 `vocals`、`backing`、`instrumental` |
+| `mix_bed.wav` | 同一调性的伴唱加纯乐器，06 将换声主唱混入此轨 |
+| `cover.wav` | 原编曲模式的目标调对照，包含换声前主唱、伴唱和乐器 |
 
 ## 查看记录与重跑
 

@@ -126,6 +126,11 @@ class Pipeline:
         value = {'contract_version': getattr(module, 'CONTRACT_VERSION', CONTRACT_VERSION), 'stage': module.ID,
                  'inputs': {key: value['sha256'] for key, value in input_records.items()},
                  'params': params, 'code': code, 'runtime': runtime}
+        declared = getattr(module, 'TIMELINE', {})
+        timelines = {role: timeline.format(arrangement=self.request.get('arrangement', 'generated'))
+                     for role, timeline in declared.items()}
+        if timelines != declared:
+            value['timelines'] = timelines
         return identity(value), input_records, value
 
     def cached(self, name, fingerprint):
@@ -230,12 +235,14 @@ class Pipeline:
             known = {Path(p).resolve() for p in paths.values()}
             paths.update({'file:' + key: path for key, path in artifact_paths(output).items() if path.resolve() not in known})
             records, portable = {}, {}
+            timelines = provenance.get('timelines', getattr(module, 'TIMELINE', {}))
             for role, path in paths.items():
                 path = Path(path).resolve()
                 if not path.is_relative_to(output.resolve()): raise ValueError(f'Output outside attempt: {path}')
                 if not path.is_file() or not path.stat().st_size: raise RuntimeError(f'Missing stage artifact: {path}')
+                timeline = timelines.get(role, timelines.get('*'))
                 metadata = {'path': str(path), 'bytes': path.stat().st_size, 'sha256': sha256(path),
-                            'media_kind': path.suffix.lstrip('.'), 'timeline': getattr(module, 'TIMELINE', {}).get(role, getattr(module, 'TIMELINE', {}).get('*'))}
+                            'media_kind': path.suffix.lstrip('.'), 'timeline': timeline}
                 if path.suffix.lower() in {'.wav', '.mp3', '.flac'}:
                     metadata['audio'] = inspect_audio(path)
                     metadata['time_origin_seconds'] = 0.0

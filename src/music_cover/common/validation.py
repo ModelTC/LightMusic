@@ -97,6 +97,10 @@ def verify_delivery(deliver, review=True):
             raise ValueError(name)
         if not abs(metadata['duration_s'] - checks['final']['duration_s']) < 0.1:
             raise ValueError(name)
+    if 'dry_vocal_sha256' in checks:
+        for name in ('vocals_before.wav', 'vocals_after.wav'):
+            if digest(deliver / name) != checks['dry_vocal_sha256'][name]:
+                raise ValueError(f'Delivered {name} differs from upstream vocal')
     pages = [deliver / 'listen.html']
     result = {'technical_validation': 'passed', 'subjective_quality': 'awaiting_human_review'}
     if checks.get('vocal_routing') == 'converted_lead_retained_backing':
@@ -104,6 +108,13 @@ def verify_delivery(deliver, review=True):
         frames = checks['final']['frames']
         gain = checks['final']['master_gain']
         total = read_at(deliver / 'vocal_post_gain.wav')
+        aligned = read_at(deliver / 'vocals_after.wav')
+        if aligned.shape != (frames, 1) or total.shape != (frames, 2):
+            raise ValueError('Delivered vocals_after.wav or its post-gain stem has the wrong dimensions')
+        aligned *= gain * checks['vocal_gain']
+        if not np.allclose(total, aligned, rtol=0, atol=2e-6):
+            raise ValueError('Delivered vocals_after.wav differs from its post-gain stem')
+        del aligned
         for role in ('backing', 'instrumental'):
             expected = fit_length(read_at(deliver / f'{role}.wav'), frames) * gain
             actual = read_at(deliver / f'{role}_post_gain.wav')

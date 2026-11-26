@@ -56,7 +56,7 @@ class CandidateGenerationTests(unittest.TestCase):
         t=np.arange(6*48000)/48000
         voice=(.1*(1+.5*np.sin(2*np.pi*1.7*t))*np.sin(2*np.pi*220*t)).astype(np.float32)
         backing=np.column_stack([.02*np.sin(2*np.pi*110*t),.02*np.sin(2*np.pi*165*t)]).astype(np.float32)
-        for name,audio in [('source.wav',voice),('reference.wav',voice),('backing.wav',backing),('cover.wav',backing+voice[:,None])]:
+        for name,audio in [('source.wav',voice),('reference.wav',voice),('backing.wav',backing),('harmony.wav',np.zeros_like(backing)),('cover.wav',backing+voice[:,None])]:
             sf.write(self.root/name,audio,48000,subtype='FLOAT')
         self.request={'backend':'so_vits_svc','voice_profile':'profile.json','seed':42,'candidate_count':1,
                       'candidate_seeds':[42],'source':str(self.root/'source.wav'),'reference':str(self.root/'reference.wav'),
@@ -103,7 +103,7 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertFalse((self.root/'so_vits_svc/converted.wav').exists())
     def test_rejected_audio_produces_real_mix_and_delivery_files(self):
         out,report=self.generate();mixed=self.root/'mix';mixed.mkdir()
-        inputs={'cover':self.root/'cover.wav','vocals':self.root/'source.wav','instrumental':self.root/'backing.wav',
+        inputs={'backing':self.root/'harmony.wav','mix_bed':self.root/'backing.wav','cover':self.root/'cover.wav','vocals':self.root/'source.wav','instrumental':self.root/'backing.wav',
                 'converted':out/'converted.wav','candidate_report':out/'candidates.json'}
         outputs=mix.run(None,mixed,inputs,mix.DEFAULTS)
         self.assertTrue((mixed/'final.mp3').stat().st_size>0)
@@ -116,7 +116,7 @@ class CandidateGenerationTests(unittest.TestCase):
             for key in ['final','final_mp3']:shutil.copy2(mixed[key],out/mixed[key].name)
             (out/'listen.html').write_text('<h1>listen</h1>');(out/'report.md').write_text('report\n')
         from music_cover.common.paths import RunPaths
-        ctx=SimpleNamespace(request={'transpose':'0','review':False},state={'stages':{}},config={},execute=lambda *a:None,paths=RunPaths(self.root,self.root/'run'))
+        ctx=SimpleNamespace(request={'transpose':'0','review':False},state={'stages':{}},config={'05_voice_conversion':{'backend':'so_vits_svc'}},execute=lambda *a:None,paths=RunPaths(self.root,self.root/'run'))
         with patch.object(delivery,'build_delivery',build):delivery.run(ctx,target,delivery_inputs,{})
         self.assertEqual(sha256(target/'final.mp3'),sha256(target/'candidates/candidate_001/final.mp3'))
         self.assertIn('无合格候选',(target/'report.md').read_text())

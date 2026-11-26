@@ -25,7 +25,7 @@
 
 ### 公共主流程下载
 
-首次准备时先备份现有锁记录；下列三个下载器会更新锁，Seed-VC 下载器还会按本机位置重建运行配置。已有权重时先检查，不重复覆盖用户改过的配置。
+首次准备时先备份现有锁记录。`download_models.py`、`download_separator_model.py` 和 `download_voice_models.py` 会更新各自的锁文件。`download_lead_duo.py` 读取仓库固定锁，逐个校验下载文件。`download_voice_models.py`（Seed-VC） 下载器还会按本机位置重建运行配置。已有权重时先检查，不重复覆盖用户改过的配置。
 
 ```bash
 mkdir -p cache
@@ -44,7 +44,7 @@ envs/base/bin/python scripts/setup/setup_voice_training.py --scope evaluation --
 
 `download_voice_models.py` 会一次准备五组 Seed-VC/F0 资产；仅用 SVC/RVC/Fish 时其中部分不是推理必需，但 02 和质量评估仍需 `models/RMVPE/rmvpe.pt`。按需精简时以 `common/resources.py` 的 requirements 为准，不能删除复用资源。
 
-HF revision 是快照版本，并非每个文件的 SHA256。BS-RoFormer 下载器会写入本次哈希，必须与备份的 `separation_model.lock.json` 比对；不能仅因新锁写出就声称原始哈希校验通过。其 YAML URL 未固定 commit，下载内容若与仓库记录不同应调查，不静默接受漂移。
+HF revision 是快照版本，并非每个文件的 SHA256。一级分离下载器 `download_separator_model.py` 会写入本次哈希，必须与备份的 `separation_model.lock.json` 比对；不能仅因新锁写出就声称原始哈希校验通过。其 YAML URL 未固定 commit，下载内容若与仓库记录不同应调查，不静默接受漂移。
 
 ## SVC 与 RVC 公共资产
 
@@ -98,7 +98,7 @@ bash scripts/05_voice_conversion/fish_diffusion/preflight/run.sh \
 |---|---|---|
 | Seed-VC 训练音色扰动 | `models/OpenVoiceV2/converter/checkpoint.pth`、`config.json` | [OpenVoiceV2](https://huggingface.co/myshell-ai/OpenVoiceV2/tree/f36e7edfe1684461a8343844af60babc2efbb727/converter) |
 | Seed-VC 训练说话人库 | `models/Seed-VC/se_db.pt` | [se_db.pt](https://huggingface.co/Plachta/Seed-VC/resolve/257283f9f41585055e8f858fba4fd044e5caed6e/se_db.pt) |
-| 原始录音两级主唱分离 | `models/separation/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt` | [Karaoke 权重](https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt)；配套配置见 `configs/review_models.lock.json` |
+| 原始录音两级主唱分离 | `models/LeadDuo/` | [双模型固定资产清单](../../configs/lead_duo.lock.json) |
 
 ```bash
 # 只在准备 Seed-VC 训练时需要 training scope。
@@ -106,15 +106,7 @@ envs/base/bin/python scripts/setup/setup_voice_training.py --scope all
 envs/base/bin/python scripts/setup/setup_voice_training.py --scope all --check-only
 ```
 
-录音分离默认 `--mode lead`，需 BS-RoFormer 与 Karaoke 两套权重及 YAML。现有 `setup_review_assets.py` 同时处理 Demucs/Basic Pitch；只为训练分离素材时，不必连带部署 07–09。可用现有 audio-separator 的下载模式准备 Karaoke，再检查仓库锁定哈希：
-
-```bash
-envs/base/bin/audio-separator \
-  --model_filename mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt \
-  --model_file_dir models/separation --download_model_only
-```
-
-包可能将运行配置命名为 `mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956_config.yaml`。锁中另外登记的 `config_mel_band_roformer_karaoke.yaml` 可按 [配套配置链接](https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/config_mel_band_roformer_karaoke.yaml) 下载；保留已验证的配套配置。当前锁定主权重 SHA256 为 `1de20d459332fe8869aeb01327a31df0032262706e1365114e852dc271779813`，锁中 YAML SHA256 为 `30364842112e18500aca7ff7b1acf235251eb4ee93b377278176b432410eae33`，以随仓库发布的锁为准。之后使用 `scripts/voice_data/separate/run.sh ... --plan` 检查；下载模式本身不等于推理成功。下载失败应保留原因，不用同名未知权重替代。
+录音分离默认 `--mode lead`。先准备一级 BS-RoFormer，再用 `python3 scripts/setup/download_lead_duo.py` 安装 anvuew、Frazer 及匹配源码。训练素材入口和 04 共用固定双模型。可用 `scripts/voice_data/separate/run.sh ... --plan` 校验本地资产。
 
 ## 人物模型部署
 

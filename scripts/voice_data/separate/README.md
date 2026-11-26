@@ -4,7 +4,7 @@
 
 ## 4．从原始音频重新分离单依纯人声
 
-输入是 `data/raw/references/shan_yi_chun/sources/<素材编号>/original.m4a`。默认两级分离：BS-RoFormer 将原始音乐分成总人声和伴奏，Karaoke Mel-Band RoFormer 再将总人声分成估计主唱和剩余部分。保持此前长命令的模型及参数：44.1 kHz WAV，normalization=1.0，amplification=0.0，batch=1，一级 overlap=8，二级 overlap=4，pitch_shift=0。
+默认先用 BS-RoFormer 分离总人声和乐器，再用与 04 相同的 anvuew 与 Frazer 双模型估计主唱。伴唱取总人声减主唱。
 
 在项目根目录执行（素材编号仅为历史示例，需替换为实际编号）：
 
@@ -75,14 +75,14 @@ envs/base/bin/python -m json.tool \
 | `--mode` | `lead`：两级分离；`vocals`：仅总人声与伴奏 |
 | `--model-dir` | `models/separation` |
 | `--vocals-model` | `model_bs_roformer_ep_317_sdr_12.9755.ckpt` |
-| `--lead-model` | `mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt` |
-| `--lead-overlap` | `4` |
+| `--lead-model` | `lead_duo`，也可显式指定兼容 audio-separator 的自定义单模型文件名 |
+| `--lead-overlap` | 双模型默认各用锁定配置，显式整数覆盖两者；自定义单模型默认 4 |
 | `--timeout-seconds` | 每份素材 `10800` 秒 |
 | `--plan` | 只检查并展示，不写文件、不加载模型 |
 | `--resume` | 校验后跳过已完成结果，继续未完成素材 |
 | `--force` | 重新计算所选素材，旧结果保留在 `.history/` |
 
-默认权重分别位于 `models/separation/model_bs_roformer_ep_317_sdr_12.9755.ckpt` 和 `models/separation/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt`；需要配套模型 YAML。覆盖模型参数时，使用 audio-separator 支持的、输出 Vocals/Instrumental 的模型，二级模型必须将主唱作为 Vocals 输出。
+一级模型放在 `--model-dir`。默认二级模型由 `python3 scripts/setup/download_lead_duo.py` 安装到 `models/LeadDuo`。自定义单模型需要输出 Vocals/Instrumental，并将主唱作为 Vocals 输出。
 
 ## 公共数据配置入口
 

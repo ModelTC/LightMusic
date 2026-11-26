@@ -951,21 +951,9 @@
     "bytes": 21,
     "sha256": "207405151270af8fd81c2373c25d27950916682ac91dca7884a11ce13dad6f58"
   },
-  "models/separation/config_mel_band_roformer_karaoke.yaml": {
-    "bytes": 1794,
-    "sha256": "30364842112e18500aca7ff7b1acf235251eb4ee93b377278176b432410eae33"
-  },
   "models/separation/download_checks.json": {
     "bytes": 28267,
     "sha256": "d3622e1fa19c161d3cf704927711b453d593a3f1eb0f2e0838c3136907935151"
-  },
-  "models/separation/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt": {
-    "bytes": 913096801,
-    "sha256": "1de20d459332fe8869aeb01327a31df0032262706e1365114e852dc271779813"
-  },
-  "models/separation/mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956_config.yaml": {
-    "bytes": 1726,
-    "sha256": "b35077d94861f068097cce1a5e54633c055e7dcc2613eade4e4dc7c7c9c3f48b"
   },
   "models/separation/model_bs_roformer_ep_317_sdr_12.9755.ckpt": {
     "bytes": 639331213,

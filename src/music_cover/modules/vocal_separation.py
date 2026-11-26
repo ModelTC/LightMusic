@@ -11,7 +11,7 @@ from ..common.resources import requirements
 ID = '04_vocal_separation'
 DEFAULTS = {'timeout_seconds': 10800}
 CODE = ['audio.py', 'backends/separator.py', 'backends/lead_duo.py']
-TIMELINE = {'*': 'generated'}
+TIMELINE = {'*': '{arrangement}'}
 
 
 def backends(r, c):
@@ -74,17 +74,8 @@ def run(ctx, out, i, p):
         ctx.execute('separator', 'separate', out, '--input', out / 'separation_input.wav')
         total, instruments = out / 'vocals.wav', out / 'instrumental.wav'
     ctx.execute('separator', 'lead', out, '--input', total)
-    lead = out / 'lead.wav'
-    voices, rate = sf.read(total, dtype='float32', always_2d=True)
-    main, main_rate = sf.read(lead, dtype='float32', always_2d=True)
-    if rate != main_rate or voices.shape != main.shape:
-        raise ValueError('Lead and total vocals must share a sample grid')
-    backing = out / 'backing.wav'
-    sf.write(backing, voices - main, rate, subtype='FLOAT')
-    del voices, main
-
     tracks = {}
-    for role, source in [('vocals', lead), ('backing', backing), ('instrumental', instruments)]:
+    for role, source in [('vocals', out / 'lead.wav'), ('backing', out / 'backing.wav'), ('instrumental', instruments)]:
         if semitones:
             target = out / f'{role}_transposed.wav'
             shift(source, target, semitones, lead=role == 'vocals')
@@ -99,11 +90,11 @@ def run(ctx, out, i, p):
         if name == 'cover' and 'plan' not in i:
             break
         wave, wave_rate = sf.read(tracks[role], dtype='float32', always_2d=True)
-        if rate != bed_rate or rate != wave_rate or wave.shape != bed.shape:
+        if bed_rate != wave_rate or wave.shape != bed.shape:
             raise ValueError(f'Unaligned {role} after transposition')
         bed += wave
         tracks[name] = out / f'{name}.wav'
-        sf.write(tracks[name], bed, rate, subtype='FLOAT')
+        sf.write(tracks[name], bed, bed_rate, subtype='FLOAT')
     write_json(out / 'stem_plan.json', {'applied_audio_semitones': semitones, 'converted_stem': 'lead',
                                         'retained_stems': ['backing', 'instrumental']})
     return tracks
