@@ -47,7 +47,7 @@ flowchart LR
 ## 可直接运行的示例
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 bash scripts/run_baseline.sh \
   --config configs/tasks/qiu_yi_nong_synthwave_sun_yanzi.yaml \

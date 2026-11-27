@@ -2,7 +2,7 @@
 
 > 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
 
-工程根目录：`/data/liuhongda/music-cover-baseline`（本机解析到 `/mnt/afs_f/liuhongda/music-cover-baseline`）。
+工程根目录：`/mnt/devoversea_afs_2/liuhongda/LightMusic`。
 
 新增 `backend=so_vits_svc, mode=finetuned`；原来的 Seed-VC zero-shot / finetuned 入口继续保留。SVC 不支持参考音频零样本转换。SVC 训练不使用源歌曲伪标签，只使用目标歌手的训练录音；模型可用于多首歌曲。
 
@@ -15,7 +15,7 @@
 ContentVec 通过现有 Transformers 的 HuBERT 实现加载同一份权重，逐项检查 211 个推理参数；仅丢弃训练用的标签嵌入和最终投影。无需安装旧 fairseq/hydra，也无需降级 base。适配代码位于 `src/music_cover/backends/svc_contentvec.py`。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 git submodule update --init third_party/so-vits-svc
 # 新机器先检查已有核心版本，再补装这几个依赖；不要覆盖当前其他环境。
@@ -38,18 +38,18 @@ git submodule update --init third_party/so-vits-svc
 
 ## 训练：四个独立阶段
 
-示例配置：`/data/liuhongda/music-cover-baseline/configs/voice_training/so_vits_svc/yang_kun.yaml`。
+示例配置：`/mnt/devoversea_afs_2/liuhongda/LightMusic/configs/voice_training/so_vits_svc/yang_kun.yaml`。
 
 输入是已有的杨坤数据集：
 
-- `/data/liuhongda/music-cover-baseline/data/raw/references/yang_kun/dataset/manifest.json`
+- `/mnt/devoversea_afs_2/liuhongda/LightMusic/data/raw/references/yang_kun/dataset/manifest.json`
 - train：41 段 / 328 秒；validation：6 段 / 48 秒；test：5 段 / 40 秒。
 - 沿用歌曲组划分，prompt 不参与训练。数据来自分离人声，仍需人工听审，不能将自动技术检查当成录音棚干声质量认证。
 
 以下命令依次执行。训练与转换均不会隐式启动另一个流程。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 
 bash scripts/05_voice_conversion/so_vits_svc/training/00_prepare/run.sh \
   --config configs/voice_training/so_vits_svc/yang_kun.yaml \
@@ -88,12 +88,12 @@ bash scripts/05_voice_conversion/so_vits_svc/training/03_export/run.sh \
 
 可复用同一份 00–04 的已保留验证 run：
 
-`/data/liuhongda/music-cover-baseline/runs/lhd_yang_kun_svc_optimized_validation_20261028`
+`/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_yang_kun_svc_optimized_validation_20261028`
 
 创建 SVC 对照 run，不重新生成 03 的歌曲：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 /opt/conda/bin/python scripts/fork_voice_run.py \
   --source-run runs/lhd_yang_kun_svc_optimized_validation_20261028 \
   --run runs/lhd_bu_bai_de_ying_xiong_celtic_epic_yang_kun_svc_20261028

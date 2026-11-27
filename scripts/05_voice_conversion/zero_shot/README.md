@@ -20,7 +20,7 @@ bash scripts/05_voice_conversion/zero_shot/run.sh \
   --run runs/lhd_test_modular
 ```
 
-本例通过 `/data` 入口运行；它指向 `/mnt/afs_f/liuhongda/music-cover-baseline`。
+本例从项目根目录 `/mnt/devoversea_afs_2/liuhongda/LightMusic` 运行。
 
 读取同一运行目录中 04 的 `vocals.wav` 和 00 的 `reference.wav`。这两个阶段及其上游必须成功且缓存有效。实际 attempt 自动从 `stage_state.json` 获取。
 

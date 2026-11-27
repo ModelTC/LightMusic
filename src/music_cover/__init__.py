@@ -1,1 +1,1 @@
-"""Offline music cover baseline."""
+"""LightMusic: offline music restyling and voice conversion."""

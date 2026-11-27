@@ -8,7 +8,7 @@
 
 | 项目 | 检查结果 | 对实施的影响 |
 | --- | --- | --- |
-| 工作根目录 | /data/liuhongda/music-cover-baseline | 项目文件和后续产物使用独立子目录 |
+| 工作根目录 | /mnt/devoversea_afs_2/liuhongda/LightMusic | 项目文件和后续产物使用独立子目录 |
 | GPU | 8 张 NVIDIA H200；每卡 143771 MiB 显存 | 首版选择一张卡即可，不默认占用全部设备 |
 | NVIDIA 驱动 | 565.57.01 | 在各环境中验证 PyTorch CUDA 实际可用 |
 | 当前 Python | /opt/conda/bin/python3，3.11.13 | 不直接改动共享 base 环境 |

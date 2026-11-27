@@ -30,7 +30,7 @@
 以下使用新的 `quality_5000` 版本名，不复用旧训练 YAML 或旧训练 run。源数据和源歌曲 run 是用户明确指定的输入。示例目录已存在时更换版本名和下游路径。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 
 bash scripts/05_voice_conversion/fish_diffusion/training/create_config/run.sh \
   --voice-id shan_yi_chun --version quality_5000 \

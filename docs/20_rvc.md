@@ -4,7 +4,7 @@
 
 RVC 是 05 的额外后端，`backend=rvc`、`mode=finetuned`。Seed-VC zero-shot、Seed-VC finetuned、so-vits-svc 的入口继续保留。RVC 推理不会启动训练，也不把参考音频当作音色条件；参考音频仍供 02 音区分析和评估使用。
 
-下文以 `/data/liuhongda/music-cover-baseline` 为命令示例。脚本按自身位置定位项目根目录，配置里的相对路径统一按项目根目录解析，不依赖某个挂载前缀或工作目录。RVC 接入已纳入 v1.0 版本，固定上游版本见仓库恢复说明。黄绮珊章节属于历史实验说明，相关 runs 已清理；当前可复现入口见下方单依纯例子。
+下文以 `/mnt/devoversea_afs_2/liuhongda/LightMusic` 为命令示例。脚本按自身位置定位项目根目录，配置里的相对路径统一按项目根目录解析，不依赖某个挂载前缀或工作目录。RVC 接入已纳入 v1.0 版本，固定上游版本见仓库恢复说明。黄绮珊章节属于历史实验说明，相关 runs 已清理；当前可复现入口见下方单依纯例子。
 
 手动验证的第 2、5、7、14 步已有独立脚本：见[环境检查与配置生成](rvc_config_scripts.md)。所有新配置由命令参数创建，不复用旧任务 YAML。
 
@@ -17,7 +17,7 @@ RVC 是 05 的额外后端，`backend=rvc`、`mode=finetuned`。Seed-VC zero-sho
 本次固定 RVC v2 / 48 kHz / RMVPE，4000 次更新，batch=6、LR=1e-4，index_rate=0.5、protect=0.33。只使用最终 `model_00004000.pth`，不搜索中途权重。验证输入为保留的《绿洲》运行在 36 秒和 156 秒处各 12 秒的人声；整曲生成 1 个候选，seed=42。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 
 bash scripts/05_voice_conversion/rvc/training/00_prepare/run.sh --config configs/voice_training/rvc/shan_yi_chun_base_20261103.yaml --run runs/voice_training/shan_yi_chun_rvc_base_20261103
 bash scripts/05_voice_conversion/rvc/training/01_features/run.sh --config configs/voice_training/rvc/shan_yi_chun_base_20261103.yaml --run runs/voice_training/shan_yi_chun_rvc_base_20261103
@@ -65,7 +65,7 @@ bash scripts/06_mix/run.sh --run runs/lhd_lv_zhou_shan_yi_chun_rvc_base_20261103
 | `models/voices/huang_qi_shan/rvc/v001_20261029/` | 配置指定的最终步数歌手权重、索引及模型档案 |
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 git submodule update --init third_party/rvc
 /opt/conda/bin/python scripts/setup_rvc.py --training
@@ -77,12 +77,12 @@ git submodule update --init third_party/rvc
 
 ## 数据与训练阶段（黄绮珊历史示例）
 
-数据只来自 `/data/liuhongda/music-cover-baseline/data/raw/references/huang_qi_shan/`。直接读取其中已整理的 `dataset/manifest.json`；训练 52 段 416 秒，验证 8 段 64 秒，测试 5 段 40 秒，另有 20 秒 prompt 被排除。保留歌曲组隔离与文件哈希检查。素材是已筛选的人声估计，含有损来源和可能的分离残留，不等于录音棚纯干声。
+数据只来自 `/mnt/devoversea_afs_2/liuhongda/LightMusic/data/raw/references/huang_qi_shan/`。直接读取其中已整理的 `dataset/manifest.json`；训练 52 段 416 秒，验证 8 段 64 秒，测试 5 段 40 秒，另有 20 秒 prompt 被排除。保留歌曲组隔离与文件哈希检查。素材是已筛选的人声估计，含有损来源和可能的分离残留，不等于录音棚纯干声。
 
 RVC 派生数据保存在 `data/voice_datasets/huang_qi_shan/rvc/v001_20261029/`，不覆盖原数据。48 kHz FLOAT WAV 用于生成器训练；16 kHz 音频用于内容和 F0 提取。特征和检索索引只取训练集。当前小数据集采用精确 `IndexFlatL2`、8 近邻距离加权，避免近似索引参数成为额外变量；不是把目标歌手音频剪片拼接。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 bash scripts/05_voice_conversion/rvc/training/00_prepare/run.sh \
@@ -125,7 +125,7 @@ bash scripts/05_voice_conversion/rvc/training/05_export/run.sh \
 下面是复用《绿洲》的独立例子。目标目录应尚不存在；源 run 必须一直保留，因为 fork 引用其上游文件并逐次校验哈希。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 /opt/conda/bin/python scripts/fork_voice_run.py \
   --source-run runs/lhd_lv_zhou_mambo_big_band_huang_qi_shan_seedvc_20261029 \
@@ -152,7 +152,7 @@ bash scripts/run_baseline.sh \
 项目默认 `huang_qi_shan.yaml` 保持 index_rate=0.5、protect=0.33。`huang_qi_shan_index075.yaml` 使用官方单次 WebUI 默认的 index_rate=0.75，其余推理与候选配置不变。官方批量 WebUI 的检索默认值为1.0，并未自动应用到本项目。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 bash scripts/05_voice_conversion/rvc/run.sh \
   --run runs/my_chuan_yue_shu_guang_rvc \
   --config configs/voice_inference/rvc/huang_qi_shan_index075.yaml --gpu 0

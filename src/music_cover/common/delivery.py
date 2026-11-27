@@ -92,10 +92,10 @@ def build_delivery(destination, request, stages, prepared, generated, separated,
     players = "\n".join(f'<p>{html.escape(label)} · <a href="{name}" download>下载</a></p>'
                         f'<audio controls preload="none" src="{name}"></audio>'
                         for name, label in labels)
-    page = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>音乐 baseline 试听</title>'
+    page = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>LightMusic 试听</title>'
             '<style>body{max-width:850px;margin:40px auto;padding:0 20px;font:17px/1.6 sans-serif;background:#f7f7f4;color:#222}'
             'audio{width:100%}p{margin-top:28px}pre{white-space:pre-wrap;font:inherit}</style>'
-            '<h1>音乐 baseline 试听</h1><p>完整流程已执行；听感质量请对照以下音频验收。</p>'
+            '<h1>LightMusic 试听</h1><p>完整流程已执行；听感质量请对照以下音频验收。</p>'
             + ('<p><a href="review/index.html">打开成品分轨与 MIDI 专业评审包</a></p>' if review else '')
             + ('<p><a href="pitch_report.html">双向选调报告与移调 MIDI</a></p>' if adaptation and 'report' in adaptation else '')
             + ('<p><a href="pitch_adherence.json">换声前后音高核验</a></p>' if pitch_check and 'adherence' in pitch_check else '')

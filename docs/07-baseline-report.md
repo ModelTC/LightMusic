@@ -1,4 +1,4 @@
-# 当前 baseline 技术摘要
+# LightMusic 技术摘要
 
 项目已接入原曲转谱、双向选调、YuE2 曲风生成、人声分离、三种换声后端、混音、成品分轨/MIDI 和技术评审。架构及接口分别见 [01](01-architecture.md)、[02](02-contracts.md)。
 

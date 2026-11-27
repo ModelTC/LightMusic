@@ -2,6 +2,8 @@
 
 ## 未发布
 
+- 项目统一命名为 LightMusic，仓库地址更新为 ModelTC/LightMusic；原 v2.0 开发分支改名为 main，项目版本仍为 v2.0。
+- README.md 使用英文，README_CN.md 提供中文说明；同步部署文档、示例目录名和试听页面标题。
 - 04 对总人声分别运行 anvuew、Frazer Karaoke BS-RoFormer，等权平均得到主唱，05 转换主唱，06 混回原音色伴唱。
 - 原编曲模式在分离后统一移调，主唱采用 Rubber Band R3 离线共振峰保留处理。生成模式继续使用移调谱面。交付分别保留伴唱与纯乐器轨。
 

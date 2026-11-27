@@ -3,7 +3,7 @@
 完整命令和输入输出路径统一维护在 [USAGE](../USAGE.md)，交付验收见 [交付指南](21_delivery.md)。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 bash scripts/run_baseline.sh \
   --config configs/tasks/chuan_yue_shu_guang_huang_qi_shan_seedvc_20261029.yaml \

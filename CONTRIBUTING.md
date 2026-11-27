@@ -58,4 +58,4 @@ envs/base/bin/python scripts/check_release.py --staged --output cache/release_ch
 - `configs/seed_svc.local.yml` 已跟踪且使用项目相对模型路径，是运行配置；其他新本地配置放 `configs/local/`。
 - 历史实验文档可保留，但素材不随 Git 提供；新使用入口不要依赖某台服务器或旧 run。
 
-后续迭代先在 CHANGELOG 中记录未发布变化；准备新版本时同步 VERSION、README、skill 和验证范围。本版源码位于 v2.0 分支；创建 tag 或 GitHub Release 是另一个显式发布动作。
+后续迭代先在 CHANGELOG 中记录未发布变化；准备新版本时同步 VERSION、README、skill 和验证范围。本版源码位于 main 分支；创建 tag 或 GitHub Release 是另一个显式发布动作。

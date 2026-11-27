@@ -2,7 +2,7 @@
 
 # 音色方案收敛验证记录（2026-10-27）
 
-历史验证记录：数值和路径描述当日实验；后续按用户要求清理过运行数据，不能假定下列目录全部仍存在。当前命令与保留结果见 [使用说明](../USAGE.md) 和 [验证记录](../VALIDATION.md)；[v0.3 实例](17_v03_walkthrough.md)保留为历史实操。
+历史验证记录：数值描述当日实验，文档中的路径已按 LightMusic 目录名统一；后续按用户要求清理过运行数据，不能假定下列目录全部仍存在。当前命令与保留结果见 [使用说明](../USAGE.md) 和 [验证记录](../VALIDATION.md)；[v0.3 实例](17_v03_walkthrough.md)保留为历史实操。
 
 删除单曲伪标签适配实现，保留零样本和目标音色通用微调。微调推理默认三个候选，以同一模型和共同输入仅改变推理种子，技术合格后按 ECAPA 选择推荐版本。
 
@@ -11,7 +11,7 @@
 在已有的 separator 环境执行（control 环境未安装评审测试所需 mido）：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 PATH="/opt/conda/bin:$PATH" PYTHONPATH=src \
   envs/separator/bin/python -m unittest discover -s tests -v
 ```
@@ -24,8 +24,8 @@ PATH="/opt/conda/bin:$PATH" PYTHONPATH=src \
 
 00–04 成功 attempt 复制到新的验证运行，并保留原输入/代码/运行环境指纹与输出清单；新流程逐一校验后复用。这里验证的是从相同生成曲出发的音色模块改造，不能宣称重新生成了原曲转谱和风格生成结果。
 
-- 微调运行：`/data/liuhongda/music-cover-baseline/runs/lhd_voice_candidates_validation`。
-- 零样本对照：`/data/liuhongda/music-cover-baseline/runs/lhd_zero_shot_convergence_validation`，复用上述同一 00–04，使用 GPU 1、review=false、voice_check=false，验证基础单结果路线。其它歌曲参数相同。
+- 微调运行：`/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_voice_candidates_validation`。
+- 零样本对照：`/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_zero_shot_convergence_validation`，复用上述同一 00–04，使用 GPU 1、review=false、voice_check=false，验证基础单结果路线。其它歌曲参数相同。
 - 微调 profile：`models/voices/sun_yanzi/seed_vc/smoke_v001/voice.json`，短素材集成模型。
 
 微调 05 实测：
@@ -56,7 +56,7 @@ PATH="/opt/conda/bin:$PATH" PYTHONPATH=src \
 
 推荐 MP3：
 
-`/data/liuhongda/music-cover-baseline/runs/lhd_voice_candidates_validation/deliverables/final.mp3`
+`/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_voice_candidates_validation/deliverables/final.mp3`
 
 全部候选：同目录 `candidates/candidate_001/final.mp3`、`candidate_002/final.mp3`、`candidate_003/final.mp3`。试听与定量入口：`candidates.html`；MIDI ZIP：`review/midi_bundle.zip`。
 

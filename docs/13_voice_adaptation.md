@@ -2,7 +2,7 @@
 
 > 当前工作树采用项目内 `envs/base/bin/python`，环境与新操作命令以 [环境说明](03-environment.md) 和 [USAGE](../USAGE.md) 为准。下文旧服务器路径、配置与实验成绩保留为历史记录；V1 LoRA 见 [新手册](25_seedvc_lora_manual.md)。
 
-以下命令在项目根目录执行；本次服务器入口为 `/data/liuhongda/music-cover-baseline`。项目可以放在其他目录，配置中的相对路径统一以脚本定位的项目根目录解析。先设置 `export PATH="/opt/conda/bin:$PATH"`。05 的两个 Seed-VC 入口、训练 00–03、验证子进程和 06 混音均直接使用 `/opt/conda/bin/python`。
+以下命令在项目根目录执行；本次服务器入口为 `/mnt/devoversea_afs_2/liuhongda/LightMusic`。项目可以放在其他目录，配置中的相对路径统一以脚本定位的项目根目录解析。先设置 `export PATH="/opt/conda/bin:$PATH"`。05 的两个 Seed-VC 入口、训练 00–03、验证子进程和 06 混音均直接使用 `/opt/conda/bin/python`。
 
 05 阶段提供两个独立入口，输出同一种 `converted.wav`，接入原来的 06–11 阶段。旧入口 `scripts/05_voice_conversion/run.sh` 保留，旧配置默认 `zero_shot`；已有运行显式保存的模式会继续沿用。想强制使用通用模型，请用 `zero_shot/run.sh`。
 
@@ -59,7 +59,7 @@ models/voices/<voice_id>/seed_vc/<version>/voice.json
 先按[环境说明](03-environment.md)准备 base 中的 Seed-VC 依赖和基础模型，见 [模型权重指南](12_model_weights.md)。零样本 05 不需要下列训练和候选评估资源；若在 10 显式开启 voice_check，则仍需要 ECAPA。微调 05 的单候选和多候选均需要评估资源。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 # 已有 base 环境上的附加依赖；保留现有 PyTorch/Transformers 版本。
@@ -132,7 +132,7 @@ bash scripts/05_voice_conversion/finetuned/training/03_export/run.sh \
 
 ```bash
 # 新建共同上游；已有有效结果时会校验复用。
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 bash scripts/run_baseline.sh \
@@ -222,7 +222,7 @@ bash scripts/05_voice_conversion/finetuned/training/02_validate/run.sh \
 验证的歌曲输入来自 `runs/lhd_lv_zhou_shan_yi_chun_modular_test` 已成功完成的 00–04，沿用其曲风、移调、人声、伴奏和参考片段；该目录必须保留。以下运行名若已执行过，不要重复当作新训练；新实验需复制配置并改 version/export_dir/run，续训则显式使用 `--resume`。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 CONFIG=configs/voice_training/shan_yi_chun_seedvc_base_20261030.yaml

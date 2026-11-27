@@ -12,7 +12,7 @@
 
 ## 直接使用：接入现有 05 模块
 
-工程目录 `/data/liuhongda/music-cover-baseline`（服务器实际解析到 `/mnt/afs_f/liuhongda/music-cover-baseline`）。推荐配置和模型：
+工程目录 `/mnt/devoversea_afs_2/liuhongda/LightMusic`。推荐配置和模型：
 
 - `configs/voice_inference/so_vits_svc/yang_kun_optimized.yaml`
 - `models/voices/yang_kun/so_vits_svc/optimized_v002_20261028/voice.json`
@@ -21,7 +21,7 @@
 使用一个已经成功完成 00–04 的 run，创建独立比较目录，避免覆盖原结果：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 # 输出目录必须尚不存在；该命令引用并校验原来的 00–04 中间产物。
@@ -64,7 +64,7 @@ bash scripts/run_baseline.sh \
 推荐训练集完整路径：
 
 ```text
-/data/liuhongda/music-cover-baseline/data/voice_datasets/yang_kun/so_vits_svc/optimization_20261028/expanded_clean_vec768l12/train/yang_kun/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/data/voice_datasets/yang_kun/so_vits_svc/optimization_20261028/expanded_clean_vec768l12/train/yang_kun/
 ```
 
 原始整理清单是上一级 `expanded_clean/manifest.json`；编码器缓存目录附带 `source_manifest.json`、train/validation/test 文件列表，`.soft.pt`、`.f0.npy`、`.spec.pt` 等。

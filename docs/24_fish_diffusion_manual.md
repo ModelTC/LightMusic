@@ -8,7 +8,7 @@
 
 下面示例版本统一为 **manual_v001**，与已经完成的 `manual_20261105` 分开；若示例输出已存在，请整体改用新的版本/目录。不要先 mkdir 创建 dataset-dir/export-dir；脚本会拒绝覆盖已有目标。
 
-本服务器根目录为 `/data/liuhongda/music-cover-baseline`，实际解析到 `/mnt/afs_f/liuhongda/music-cover-baseline`。以下从该根目录运行；各脚本的相对参数路径也按根目录解析，不依赖 VC_*。新机器先按 [Skill](../skill/SKILL.md)部署并完成自己的 00–04，将歌手名、素材编号、窗口和 source-run 替换为真实输入；本服务器录音/模型不随 Git 提供。
+本服务器根目录为 `/mnt/devoversea_afs_2/liuhongda/LightMusic`。以下从该根目录运行；各脚本的相对参数路径也按根目录解析，不依赖 VC_*。新机器先按 [Skill](../skill/SKILL.md)部署并完成自己的 00–04，将歌手名、素材编号、窗口和 source-run 替换为真实输入；本服务器录音/模型不随 Git 提供。
 
 | 内容 | 项目内路径 | 是否必须事先存在 |
 |---|---|---|
@@ -29,7 +29,7 @@
 输入：已部署的 Fish、ContentVec、NSF-HiFiGAN、ECAPA/RMVPE。原始录音分离另需 BS-RoFormer 和 anvuew + Frazer 模型及 YAML。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 source /opt/conda/etc/profile.d/conda.sh
 conda activate base
 export PATH="/opt/conda/bin:$PATH"
@@ -175,8 +175,8 @@ bash scripts/06_mix/run.sh \
 输入：05 converted.wav、04 instrumental.wav 和时间轴。无需新增模型。最终音频：
 
 ```text
-/data/liuhongda/music-cover-baseline/runs/lhd_lv_zhou_shan_yi_chun_fish_manual_v001/stages/06_mix/attempt_001/artifacts/final.wav
-/data/liuhongda/music-cover-baseline/runs/lhd_lv_zhou_shan_yi_chun_fish_manual_v001/stages/06_mix/attempt_001/artifacts/final.mp3
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_lv_zhou_shan_yi_chun_fish_manual_v001/stages/06_mix/attempt_001/artifacts/final.wav
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_lv_zhou_shan_yi_chun_fish_manual_v001/stages/06_mix/attempt_001/artifacts/final.mp3
 ```
 
 同目录 mix.json 记录混音；只到 06 不会创建顶层 deliverables（主流程 11 的职责）。完成这里已经得到最终歌曲，不需要下一步才能使用。
@@ -212,6 +212,6 @@ bash scripts/05_voice_conversion/fish_diffusion/validate/run.sh \
 | 对齐后音高误差 ≤1 半音比例 | 98.1959% |
 | 混音时长 | 257.3986875 秒，48 kHz 双声道 WAV/MP3 |
 
-实际最终文件：`/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_lv_zhou_shan_yi_chun_fish_manual_20261105/stages/06_mix/attempt_001/artifacts/final.mp3`；SHA256 `5e199ae0943e827dd4df7bac2cafe9db6690f7600ef48c1dc12451332a496699`。上述指标来自 05 的 candidates/candidate_001/diagnostics/metrics.json，不冒称已运行可选第 13 步或全部独立测试集。
+实际最终文件：`/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_lv_zhou_shan_yi_chun_fish_manual_20261105/stages/06_mix/attempt_001/artifacts/final.mp3`；SHA256 `5e199ae0943e827dd4df7bac2cafe9db6690f7600ef48c1dc12451332a496699`。上述指标来自 05 的 candidates/candidate_001/diagnostics/metrics.json，不冒称已运行可选第 13 步或全部独立测试集。
 
 训练数据与上一轮优化实验（95 段）不同，这次重新分离/切片得到 96 段，不能混用两轮计数和分数。以后重跑以训练 state.json、歌曲 stage_state.json 指向的成功 attempt 为准。数据和结果是服务器资产，不是 Git 自带文件；本文记录技术完成，未宣称人工听感已通过。

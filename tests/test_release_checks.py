@@ -13,6 +13,7 @@ class ReleaseChecks(unittest.TestCase):
         for name, payload in [('runs/a/state.json', b'{}'), ('data/dialogue_conversion/manifest.json', b'{}'),
                               ('models/adapter.pth', b'x'), ('configs/local/voice.yaml', b'x'),
                               ('configs/voice.yaml', b'reference: /mnt/private/project/ref.wav'),
+                              ('configs/voice.yaml', b'reference: /data/user/LightMusic/data/ref.wav'),
                               ('configs/requirements.txt', b'package @ file:///home/user/wheel.whl'),
                               ('.env', b'SECRET=x')]:
             with self.subTest(name=name): self.assertTrue(checks.check_blob(name, payload))

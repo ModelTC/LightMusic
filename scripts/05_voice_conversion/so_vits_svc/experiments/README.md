@@ -1,13 +1,13 @@
 # 杨坤 SVC 独立实验工具
 
-这些是2026-10-28实验的复现入口，不会被普通baseline自动执行。结论、数据和最终使用命令见 [`docs/19_svc_optimization.md`](../../../../docs/19_svc_optimization.md)。执行根目录始终为 `/data/liuhongda/music-cover-baseline`。
+这些是2026-10-28实验的复现入口，不会被普通 LightMusic 流程自动执行。结论、数据和最终使用命令见 [`docs/19_svc_optimization.md`](../../../../docs/19_svc_optimization.md)。执行根目录始终为 `/mnt/devoversea_afs_2/liuhongda/LightMusic`。
 
 ## 环境/权重检查
 
 不新建环境，不升级base的torch/transformers等核心包：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 /opt/conda/bin/python -m pip install \
   --target cache/svc_optimization/python_deps --no-deps \

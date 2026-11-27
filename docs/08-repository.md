@@ -1,6 +1,14 @@
-# 仓库、运行数据与发布边界
+# LightMusic 仓库、运行数据与发布边界
 
 源码包括 src、scripts、tests、configs 模板/锁、docs、skill、patches；运行资产放 envs、cache、models、data、runs。均在项目根目录下，不要求软链接。
+
+## 仓库与当前工作目录
+
+仓库为 [ModelTC/LightMusic](https://github.com/ModelTC/LightMusic)，默认开发分支为 `main`，由原 `v2.0` 分支改名而来；项目版本号仍为 `v2.0`。更名前的旧 `main` 保存在 `archive/main-before-v2.0-20261127`。
+
+主入口 [README.md](../README.md) 为英文，[README_CN.md](../README_CN.md) 为中文。本文档中的服务器示例统一使用 `/mnt/devoversea_afs_2/liuhongda/LightMusic`；其他机器以实际克隆位置为准。
+
+项目名称更新不更改 Python 包 `music_cover`、CLI 入口 `scripts/run_baseline.sh` 或既有运行编号。历史运行日志、模型导出包与 installed 环境快照保留原始字节和哈希；不要用全文替换重写已封存的验收证据。迁移后的运行状态通过项目路径解析器读取。
 
 ## 哪些文件提交
 

@@ -12,15 +12,15 @@
 
 | 项目 | 本次设置 |
 | --- | --- |
-| 项目根目录 | `/mnt/afs_f/liuhongda/music-cover-baseline` |
-| 原曲 | `/mnt/afs_f/liuhongda/music-cover-baseline/data/raw/songs/qiu_yi_nong.mp3` |
-| 歌词 | `/mnt/afs_f/liuhongda/music-cover-baseline/data/raw/lyrics/qiu_yi_nong.txt` |
-| 参考音色 | `/mnt/afs_f/liuhongda/music-cover-baseline/data/raw/references/sun_yanzi/reference.wav`，取 0–16 秒歌声 |
+| 项目根目录 | `/mnt/devoversea_afs_2/liuhongda/LightMusic` |
+| 原曲 | `/mnt/devoversea_afs_2/liuhongda/LightMusic/data/raw/songs/qiu_yi_nong.mp3` |
+| 歌词 | `/mnt/devoversea_afs_2/liuhongda/LightMusic/data/raw/lyrics/qiu_yi_nong.txt` |
+| 参考音色 | `/mnt/devoversea_afs_2/liuhongda/LightMusic/data/raw/references/sun_yanzi/reference.wav`，取 0–16 秒歌声 |
 | 曲风 | upbeat bossa nova and samba jazz；国语演唱，尼龙弦吉他、贝斯、刷鼓、轻打击乐、长笛和电钢琴等 |
 | 自动选调 | `auto`，默认候选 -6～+6 半音，参考明确标记为 `singing` |
 | 换声步数 / 随机种子 / GPU | 30 / 42 / 0 |
 | 分轨与 MIDI | `--review` 开启 |
-| 运行目录 | `/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular` |
+| 运行目录 | `/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular` |
 
 `--run` 决定实际输出目录；`--name` 是任务名称。**lhd_test_modular 位于 runs 内。** 本文所有模块必须使用同一个 `--run`。
 
@@ -37,9 +37,9 @@ ssh root@10.210.8.11 -p 7830
 ```bash
 source /opt/conda/etc/profile.d/conda.sh
 conda activate base
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
-LHD_RUN="/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular"
+LHD_RUN="/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular"
 ```
 
 `(base)` 是交互终端环境；各模块仍自动使用项目的隔离环境。`PATH` 保证找到 FFmpeg。新开终端后请重新执行上面的初始化，尤其是 `LHD_RUN` 变量。
@@ -77,7 +77,7 @@ bash scripts/00_prepare/run.sh \
 结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/00_prepare/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/00_prepare/attempt_001/artifacts/
 ```
 
 | 产物 | 检查内容 |
@@ -100,7 +100,7 @@ bash scripts/01_source_score/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/01_source_score/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/01_source_score/attempt_001/artifacts/
 ```
 
 01 原曲乐谱将供 02 移调。此时尚未生成新曲。
@@ -124,7 +124,7 @@ bash scripts/02_pitch_adaptation/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/02_pitch_adaptation/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/02_pitch_adaptation/attempt_001/artifacts/
 ```
 
 先查看 pitch_report.html 和 transposition.json，再比较原谱与移调谱。相同素材在本次实测中选择了 -2 半音（Am → Gm）；新实验以实际报告为准。
@@ -151,7 +151,7 @@ bash scripts/03_style_generation/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/03_style_generation/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/03_style_generation/attempt_001/artifacts/
 ```
 
 试听 generated/audio.flac，检查歌词、旋律、曲风、段落和结尾。这个 FLAC 已是新生成的完整歌曲，包含人声与伴奏；其人声由 YuE2 生成，05 才使用孙燕姿参考做音色转换。
@@ -173,7 +173,7 @@ bash scripts/04_vocal_separation/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/04_vocal_separation/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/04_vocal_separation/attempt_001/artifacts/
 ```
 
 分别试听两轨，检查人声完整性、串音、混响与伴奏损伤。
@@ -195,7 +195,7 @@ bash scripts/05_voice_conversion/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/05_voice_conversion/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/05_voice_conversion/attempt_001/artifacts/
 ```
 
 对照 04 人声、00 参考和 converted.wav，判断音色、咬字、颤音、长音、破音及杂音。本阶段额外半音偏移为 0，保持生成歌曲的音高。
@@ -216,7 +216,7 @@ bash scripts/06_mix/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/06_mix/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/06_mix/attempt_001/artifacts/
 ```
 
 这一步完成后已经可以试听完整成品。检查人声是否与伴奏错位、音量是否合适，并与 reconstruction.wav 对照分离和换声带来的变化。
@@ -240,7 +240,7 @@ bash scripts/07_stem_separation/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/07_stem_separation/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/07_stem_separation/attempt_001/artifacts/
 ```
 
 逐轨试听目标声部是否保留、是否串音。12 条 WAV 包含父轨、子轨和残差；相加重建时只使用 stems.json 的 10 条 leaf_sum_roles，避免重复加入父轨。背景人声轨可能含混响，不能直接认定为独立和声。
@@ -265,7 +265,7 @@ bash scripts/08_final_score/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/08_final_score/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/08_final_score/attempt_001/artifacts/
 ```
 
 这是成品时间轴上的转谱。01 是原曲谱，02 是调整后输入谱，08 是成品重新识别的谱，三者用途不同。生成可能改变时长，不能直接用相同秒数比较音乐位置。
@@ -288,7 +288,7 @@ bash scripts/09_stem_midi/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/09_stem_midi/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/09_stem_midi/attempt_001/artifacts/
 ```
 
 在 DAW 中把 MIDI 与相应分轨一起检查音高、起止时间、漏音和多余音符。主 MIDI 用固定 120 BPM 表达绝对秒时间，不是声称歌曲实际为 120 BPM；鼓为起音候选，harmony 为和弦指南，均需校对。MIDI 不包含孙燕姿音色。
@@ -313,7 +313,7 @@ bash scripts/10_evaluation/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/10_evaluation/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/10_evaluation/attempt_001/artifacts/
 ```
 
 先检查 technical_validation、pitch_adherence.status 和各项细节。verified 表示当前工程规则通过，不能代替音色、曲风、歌词和自然度的人工评判。
@@ -336,7 +336,7 @@ bash scripts/11_delivery/run.sh --run "$LHD_RUN"
 本模块结果目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/stages/11_delivery/attempt_001/artifacts/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/stages/11_delivery/attempt_001/artifacts/
 ```
 
 所有交付检查通过后，运行根目录的 deliverables 指向本次成功结果。人工评分请写入运行根目录 reviews 的副本，保持 stages/attempt/artifacts 内的缓存产物不变。
@@ -353,13 +353,13 @@ bash scripts/11_delivery/run.sh --run "$LHD_RUN"
 最终统一查看目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/deliverables/
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/deliverables/
 ```
 
 人工评分文件：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_test_modular/reviews/review_scores.csv
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_test_modular/reviews/review_scores.csv
 ```
 
 ## 4. 同一示例的简短命令

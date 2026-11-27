@@ -2,7 +2,7 @@
 
 # 使用说明（v0.3）
 
-项目位置：`/mnt/afs_f/liuhongda/music-cover-baseline`（现有 `/data/liuhongda/music-cover-baseline` 为同一共享目录的入口）。已有的环境、权重和演示数据可重复使用，默认零样本模式无需训练目标人物音色模型。可选的目标音色微调使用独立训练脚本，见 [音色微调手册](../../docs/13_voice_adaptation.md)。
+项目位置：`/mnt/devoversea_afs_2/liuhongda/LightMusic`。已有的环境、权重和演示数据可重复使用，默认零样本模式无需训练目标人物音色模型。可选的目标音色微调使用独立训练脚本，见 [音色微调手册](../../docs/13_voice_adaptation.md)。
 
 **按模块一步步运行：**见 [00–11 完整实操手册](../../docs/11_modular_walkthrough.md)，使用“孙燕姿＋秋意浓＋upbeat bossa nova and samba jazz”，包含长命令、简短配置、完整输出路径及检查重点。
 
@@ -48,7 +48,7 @@ bash scripts/run_baseline.sh --run runs/my_modular_test --from 10_evaluation
 ## 先复现内置演示
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 bash scripts/run_baseline.sh --demo
 ```
 
@@ -57,7 +57,7 @@ bash scripts/run_baseline.sh --demo
 ## 跑自己的歌曲
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 bash scripts/run_baseline.sh \
   --song data/raw/songs/my_song.mp3 \
   --lyrics data/raw/lyrics/my_song.txt \
@@ -82,7 +82,7 @@ YuE2 默认的 9000 个语义 token 约对应 6 分钟。当前脚本会按乐�
 使用已标记为歌声参考的任务配置：
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 bash scripts/run_baseline.sh \
   --config configs/tasks/qiu_yi_nong_synthwave_sun_yanzi.yaml \
@@ -111,7 +111,7 @@ bash scripts/run_baseline.sh \
 现有服务器已准备 `xi_huan_ni_beyond.mp3`、测试用 `.txt` 歌词、原始 `.lrc` 和来源记录。Git 不包含这些媒体或歌词，需要自行准备同名文件或替换输入路径。`--style` 使用 `Cantonese` 指定粤语；这属于生成目标，实际发音和歌词忠实度仍需验收。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 bash scripts/run_baseline.sh \
   --song data/raw/songs/xi_huan_ni_beyond.mp3 \
@@ -182,7 +182,7 @@ MP3 由最终 WAV 使用 FFmpeg 的 `libmp3lame` 编码器生成。启动前会�
 验证交付文件（使用已安装 MIDI 依赖的 separator 环境）：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 envs/separator/bin/python scripts/verify_review.py /绝对路径/runs/某次运行 \
   --output /绝对路径/runs/某次运行/delivery_verification.json
 PYTHONPATH=src envs/separator/bin/python -m unittest discover -s tests -v
@@ -256,7 +256,7 @@ Seed-VC 微调入口默认生成三个完整候选（seed=42 时为 42、43、44
 RVC 使用独立训练入口和已训练歌手模型，不能只传参考音频做零样本转换。六个训练步骤、模型权重及完整路径见 [RVC 使用文档](../../docs/20_rvc.md)。配置的最终 4000 步模型直接用于推理；无需逐个试听训练检查点来选模型。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 /opt/conda/bin/python scripts/fork_voice_run.py \
   --source-run runs/lhd_lv_zhou_mambo_big_band_huang_qi_shan_seedvc_20261029 \

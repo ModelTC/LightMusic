@@ -1,4 +1,4 @@
-# 模块化 baseline：执行、产物契约与技术迭代
+# LightMusic：执行、产物契约与技术迭代
 
 当前工作区沿用下述依赖结构：05 支持 Seed-VC zero_shot / finetuned、SVC 和 RVC；06/11 支持微调候选混音和交付，10 支持可选 ECAPA。详见 [当前使用手册](../USAGE.md)、[音色训练](13_voice_adaptation.md)、[候选说明](15_voice_candidates.md)、[SVC](18_so_vits_svc.md) 和 [RVC](20_rvc.md)。
 
@@ -95,7 +95,7 @@ flowchart TD
 以下命令从项目根目录执行；路径在配置中也按项目根目录解释。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 # 直接完整执行，会自动创建新运行目录

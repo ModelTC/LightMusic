@@ -9,10 +9,10 @@
 本机项目根目录：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline
+/mnt/devoversea_afs_2/liuhongda/LightMusic
 ```
 
-下文 `models/...`、`envs/...` 等均相对此根目录。现有 `/data/liuhongda/music-cover-baseline` 指向同一共享项目；迁移到新机器时应使用新机器实际路径。本文负责模型资产准备；Python/CUDA 环境的前提及迁移限制见[仓库恢复说明](08-repository.md)，运行步骤见[00–11 实操手册](11_modular_walkthrough.md)。
+下文 `models/...`、`envs/...` 等均相对此根目录。迁移到新机器时应使用新机器实际路径。本文负责模型资产准备；Python/CUDA 环境的前提及迁移限制见[仓库恢复说明](08-repository.md)，运行步骤见[00–11 实操手册](11_modular_walkthrough.md)。
 
 ## 1. 先按模块看需要哪些模型
 
@@ -58,7 +58,7 @@
 例如，BS-RoFormer 的完整路径为：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/models/separation/model_bs_roformer_ep_317_sdr_12.9755.ckpt
+/mnt/devoversea_afs_2/liuhongda/LightMusic/models/separation/model_bs_roformer_ep_317_sdr_12.9755.ckpt
 ```
 
 不要只复制上表的大文件。Hugging Face 模型需要保留下载脚本准备的整个模型目录，包括配置、分词器和自定义 Python 实现。下列配套文件也要保留：
@@ -111,7 +111,7 @@ Hugging Face 下载脚本固定以下 revision，不以最新 `main` 替代。�
 ```bash
 source /opt/conda/etc/profile.d/conda.sh
 conda activate base
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 # 下载脚本会更新部分锁文件；保留当前分支的原始记录，便于比较。
@@ -163,7 +163,7 @@ envs/separator/bin/python scripts/setup/setup_review_assets.py
 
 得到 Demucs 权重/配置，以及 `models/review/basic_pitch.onnx`。Basic Pitch 模型从安装包复制，运行使用 CPU ONNX；无需为此安装 TensorFlow。对应实现是 [scripts/setup/setup_review_assets.py](../scripts/setup/setup_review_assets.py)。
 
-如果已经在别处下载了评审资源，可把下列两个同名文件放到 `/mnt/afs_f/liuhongda/music-cover-baseline/cache/review-downloads/`：
+如果已经在别处下载了评审资源，可把下列两个同名文件放到 `/mnt/devoversea_afs_2/liuhongda/LightMusic/cache/review-downloads/`：
 
 ```text
 5c90dfd2-34c22ccb.th
@@ -174,7 +174,7 @@ htdemucs_6s.yaml
 
 ```bash
 envs/separator/bin/python scripts/setup/setup_review_assets.py \
-  --local-assets /mnt/afs_f/liuhongda/music-cover-baseline/cache/review-downloads
+  --local-assets /mnt/devoversea_afs_2/liuhongda/LightMusic/cache/review-downloads
 ```
 
 缺少的文件仍会尝试联网获取，已存在的目标文件不会因此被覆盖；Basic Pitch 仍从本机安装包复制。这个参数仅适用于评审准备脚本，其他三个下载脚本没有 `--local-assets` 参数。
@@ -305,7 +305,7 @@ PY
 | [speechbrain/spkrec-ecapa-voxceleb](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb/tree/0f99f2d0ebe89ac095bcc5903c4dd8f72b367286) | `0f99f2d0ebe89ac095bcc5903c4dd8f72b367286` |
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 /opt/conda/bin/python -m pip install --no-deps \
   -r configs/requirements-voice-adaptation.txt
@@ -321,7 +321,7 @@ export PATH="/opt/conda/bin:$PATH"
 05 的 Seed-VC / RVC `finetuned` 模式默认产生三个候选并自动评估，SVC/Fish 当前使用一个候选；即使只有一个候选，也需要冻结的 ECAPA-TDNN 和 RMVPE。零样本 05 仍不需要 ECAPA；10 的可选 voice_check 启用时才需要。加载已导出的通用音色模型进行推理，不需要 OpenVoiceV2 或训练向量库。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 /opt/conda/bin/python scripts/setup/setup_voice_training.py --scope evaluation
 ```
@@ -387,7 +387,7 @@ RVC 默认预设 `configs/voice_inference/rvc/huang_qi_shan.yaml` 使用检索�
 
 ## Fish Diffusion 公共权重与歌手模型（工作树扩展）
 
-下表路径相对本文服务器根目录 `/mnt/afs_f/liuhongda/music-cover-baseline`；新机器以自己的根目录解析。
+下表路径相对本文服务器根目录 `/mnt/devoversea_afs_2/liuhongda/LightMusic`；新机器以自己的根目录解析。
 
 | 组件 | 项目内路径 | 下载链接/生成方式 |
 |---|---|---|

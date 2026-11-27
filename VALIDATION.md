@@ -136,14 +136,14 @@ The sections below preserve earlier release evidence.
 
 ## 文件位置
 
-完整新 run：`/data/liuhongda/music-cover-baseline/runs/project_delivery_validation_20261029/rvc_full/`。
+完整新 run：`/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/project_delivery_validation_20261029/rvc_full/`。
 
 - 最终音频：`deliverables/final.mp3`、`deliverables/final.wav`。
 - 专业评审：`deliverables/review/index.html`、`review/audio/`、`review/midi/`。
 - 全部过程：`stages/00_prepare`～`stages/11_delivery`，当前 attempt 见 `stage_state.json`。
 - SVC 切换测试：同一验证父目录下的 `svc_switch/`，只执行至06，不冒充完整交付。
 
-验收证据位于 `/data/liuhongda/music-cover-baseline/cache/project_cleanup_20261029/`：
+验收证据位于 `/mnt/devoversea_afs_2/liuhongda/LightMusic/cache/project_cleanup_20261029/`：
 
 - `tests_after.log`、`source_check.json`、`preflight.json`。
 - `full_rvc.log`、`delivery_verification.json`、`cache_reuse.log`。
@@ -291,7 +291,7 @@ RVC v2 / 768 维内容编码器 / RMVPE / 48 kHz NSF，使用既有 base，无�
 45 项回归测试全部通过（原 33 项 + 新 12 项）。覆盖升/降/0、讲话与未知参考、参考不足或不稳定、手动覆盖、安静歌声、非有限值、孤立八度尖峰、参数范围、多个参考、八度识别、错误移调检测和 MIDI 事件/时间往返。完整测试应使用已有 separator 环境；control 环境不含评审测试所需 mido。另完成 66 个 Python 文件语法、79 个代码锁文件哈希、23 个文档 Bash 示例语法检查。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 PATH="/opt/conda/bin:$PATH" PYTHONPATH=src envs/separator/bin/python -m unittest discover -s tests -v
 ```
 

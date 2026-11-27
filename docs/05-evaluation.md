@@ -22,7 +22,7 @@ RVC/SVC 的参考片段不参与其推理条件，但仍需核对是否与训练
 示例使用已保留的完整 RVC 运行：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 PYTHONPATH=src envs/separator/bin/python scripts/verify_review.py \
   runs/lhd_chuan_yue_shu_guang_orchestral_soul_huang_qi_shan_rvc_20261029 \
   --output cache/chuan_yue_delivery_check.json

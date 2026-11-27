@@ -1,6 +1,6 @@
 > 历史存档，保留当时的设计与验证记录。路径可能已清理，不作为当前操作手册。当前入口见 [使用说明](../../USAGE.md)。
 
-# 音乐换风格与参考音色转换 baseline
+# LightMusic
 
 **v0.3 当前实例：**[杨坤 1000 步微调模型＋《不败的英雄》＋凯尔特史诗，完整命令和产物路径](../../docs/17_v03_walkthrough.md)。78 项测试通过；本例 00–11 全部完成，128.20 秒，ECAPA 0.8214。训练、推理和候选比较分别说明，模型与音频保留在服务器。
 
@@ -10,7 +10,7 @@
 
 项目实现了：**原曲 → SheetSage2 旋律转录 → YuE2 换风格 → BS-RoFormer 人声分离 → Seed-VC / so-vits-svc 音色转换 → 对齐混音 → 成品分轨、MIDI 和专业评审包**。默认使用通用预训练权重进行零样本换声，也支持独立训练和导出目标音色模型，再由05加载推理。
 
-当前版本 **v0.3**（分支 `v0.3`），沿用 v0.2 的 12 阶段模块化，新增目标音色训练、独立零样本/微调入口和微调候选推荐，支持可选的双向音区分析与谱面移调（默认 auto 候选 -6～+6），默认输出 WAV、MP3 和评审包。《秋意浓》Synthwave / Dance-pop 与《喜欢你》Bossa Nova / Samba Jazz 均已完成整首推理；后者在 2026-10-23 通过 122 个评审文件的独立检查。目标风格和参考音色不等于听感验收结论。技术路线、模型分工和限制见 [Baseline 技术报告](../../docs/07-baseline-report.md)。
+当前版本 **v0.3**（分支 `v0.3`），沿用 v0.2 的 12 阶段模块化，新增目标音色训练、独立零样本/微调入口和微调候选推荐，支持可选的双向音区分析与谱面移调（默认 auto 候选 -6～+6），默认输出 WAV、MP3 和评审包。《秋意浓》Synthwave / Dance-pop 与《喜欢你》Bossa Nova / Samba Jazz 均已完成整首推理；后者在 2026-10-23 通过 122 个评审文件的独立检查。目标风格和参考音色不等于听感验收结论。技术路线、模型分工和限制见 [LightMusic 技术报告](../../docs/07-baseline-report.md)。
 
 此仓库保存项目代码、测试、文档、模型版本及环境记录；YuE、Seed-VC 和 so-vits-svc 上游代码以固定 commit 的 Git 子模块管理。权重、运行环境、歌曲、歌词、参考录音和生成音频保留在本地。克隆及恢复说明见 [仓库与本地资源说明](../../docs/08-repository.md)。文档中的 `runs/...` 试听链接仅在拥有本地运行产物时可用。
 
@@ -25,7 +25,7 @@
 逐模块操作示例（孙燕姿＋秋意浓＋Synthwave / Dance-pop）：
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 # 00：读取原曲、歌词、参考录音，创建运行并保存配置
@@ -47,7 +47,7 @@ bash scripts/run_baseline.sh --run runs/qiu_yi_nong_modular_test --from 02_pitch
 v0.1 上传前复核（2026-10-23）：22 项测试和完整环境预检通过。《喜欢你》现有结果包含约 269.84 秒成品、12 条评审音轨、10 个主 MIDI 文件；技术检查通过，人工听音与乐谱校对待完成。首次演示和后续验证的日期、耗时、哈希及质量问题见 [验证记录](../../VALIDATION.md)。旧运行及便捷链接已清理，不作为当前下载入口。
 
 ```bash
-cd /mnt/afs_f/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 bash scripts/run_baseline.sh --demo
 ```

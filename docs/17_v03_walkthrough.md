@@ -6,7 +6,7 @@
 
 ## 1. 输入与模型
 
-项目根目录是 `/data/liuhongda/music-cover-baseline`，当前服务器上与 `/mnt/afs_f/liuhongda/music-cover-baseline` 指向同一共享目录。下面的相对路径均基于项目根目录。
+项目根目录是 `/mnt/devoversea_afs_2/liuhongda/LightMusic`。下面的相对路径均基于项目根目录。
 
 | 材料 | 路径 |
 | --- | --- |
@@ -26,7 +26,7 @@ Git 不包含录音、歌词正文、歌手权重和 Python 环境。现有服�
 ## 2. 一条命令完整生成
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 
 # 检查各阶段环境、模型及音色 profile，不启动生成。
@@ -47,9 +47,9 @@ bash scripts/run_baseline.sh \
 以下与完整命令等价，选一种执行方式即可。所有命令共用一个 `LHD_RUN`；首次 00 指定任务配置，后续读取运行中保存的配置。每一步都要求上游已成功且未失效。
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
-LHD_RUN="/data/liuhongda/music-cover-baseline/runs/lhd_celtic_epic_v03"
+LHD_RUN="/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_celtic_epic_v03"
 
 bash scripts/00_prepare/run.sh \
   --config configs/tasks/bu_bai_de_ying_xiong_celtic_epic_yang_kun.yaml \
@@ -67,7 +67,7 @@ bash scripts/10_evaluation/run.sh --run "$LHD_RUN"
 bash scripts/11_delivery/run.sh --run "$LHD_RUN"
 ```
 
-下表的输出均位于 `$LHD_RUN/stages/<模块>/attempt_001/artifacts/`。例如 03 的完整音频路径是 `/data/liuhongda/music-cover-baseline/runs/lhd_celtic_epic_v03/stages/03_style_generation/attempt_001/artifacts/generated/audio.flac`。重跑后可能是 attempt_002，以 `stage_state.json` 的成功 attempt 为准。
+下表的输出均位于 `$LHD_RUN/stages/<模块>/attempt_001/artifacts/`。例如 03 的完整音频路径是 `/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_celtic_epic_v03/stages/03_style_generation/attempt_001/artifacts/generated/audio.flac`。重跑后可能是 attempt_002，以 `stage_state.json` 的成功 attempt 为准。
 
 | 模块 | 使用哪个上游 | 查看本阶段产物 |
 | --- | --- | --- |
@@ -84,7 +84,7 @@ bash scripts/11_delivery/run.sh --run "$LHD_RUN"
 | 10_evaluation | 00 原曲/参考、02 移调计划、04/06 人声、07–09 评审数据 | `evaluation.json`、`voice_conversion_evaluation.json`、`pitch_adherence.json` |
 | 11_delivery | 已通过的各模块产物 | `final.mp3`、`final.wav`、`listen.html`、`review/index.html`、`review/midi_bundle.zip`、`delivery_validation.json` |
 
-11 校验通过后，`$LHD_RUN/deliverables/` 指向其成功产物。最终 MP3 在 `/data/liuhongda/music-cover-baseline/runs/lhd_celtic_epic_v03/deliverables/final.mp3`，分轨在同目录的 `review/audio/`，MIDI 在 `review/midi/`。02 的 MIDI 是移调后的输入旋律；09/交付包的 MIDI 是新成品重新转谱，不要混用。
+11 校验通过后，`$LHD_RUN/deliverables/` 指向其成功产物。最终 MP3 在 `/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_celtic_epic_v03/deliverables/final.mp3`，分轨在同目录的 `review/audio/`，MIDI 在 `review/midi/`。02 的 MIDI 是移调后的输入旋律；09/交付包的 MIDI 是新成品重新转谱，不要混用。
 
 ## 4. 切换零样本或三个候选
 
@@ -112,7 +112,7 @@ bash scripts/run_baseline.sh \
 
 ## 5. 已完成的真实验证结果
 
-2026-10-28 已完成的目录为 `/data/liuhongda/music-cover-baseline/runs/lhd_bu_bai_de_ying_xiong_celtic_epic_yang_kun_finetuned_20261028`，与上面建议的新运行名区分。此目录的 `deliverables/final.mp3` 可直接试听，主流程 00–11、交付包检查和 78 项测试均通过。
+2026-10-28 已完成的目录为 `/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_bu_bai_de_ying_xiong_celtic_epic_yang_kun_finetuned_20261028`，与上面建议的新运行名区分。此目录的 `deliverables/final.mp3` 可直接试听，主流程 00–11、交付包检查和 78 项测试均通过。
 
 | 指标 | 值 |
 | --- | --- |
@@ -128,7 +128,7 @@ bash scripts/run_baseline.sh \
 检查已有结果，不启动生成：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 bash scripts/run_baseline.sh \
   --run runs/lhd_bu_bai_de_ying_xiong_celtic_epic_yang_kun_finetuned_20261028 --status

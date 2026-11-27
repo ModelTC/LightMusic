@@ -1,9 +1,9 @@
 ---
 name: music-cover-deploy
-description: 在 music-cover-baseline 中部署项目内环境和固定模型，准备歌曲与目标参考，运行 00–06 音乐生成并定位产物和故障。支持 Seed-VC V1 零样本、全量微调、LoRA，以及 so-vits-svc、RVC、Fish Diffusion；训练、验证、导出与单曲推理分开执行。
+description: 在 LightMusic 中部署项目内环境和固定模型，准备歌曲与目标参考，运行 00–06 音乐生成并定位产物和故障。支持 Seed-VC V1 零样本、全量微调、LoRA，以及 so-vits-svc、RVC、Fish Diffusion；训练、验证、导出与单曲推理分开执行。
 ---
 
-# Music Cover 部署、训练与生成
+# LightMusic 部署、训练与生成
 
 使用仓库现有 Shell 入口，不另写一套模型流程。先定位同时包含 scripts/run_baseline.sh、src/music_cover 和 configs/pipeline.yaml 的根目录。本 skill 与项目 v2.0 配套，Seed-VC 仍使用 V1；核对实际 commit，旧发布分支未必包含当前接口。
 

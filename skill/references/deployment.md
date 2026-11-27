@@ -1,6 +1,6 @@
 # 运行环境与迁移
 
-从 ModelTC/music-cover-baseline 的 v2.0 分支获取本版代码，保留固定子模块。已有工作树先检查改动，不覆盖未知修改。新克隆使用 `git clone --branch v2.0 https://github.com/ModelTC/music-cover-baseline.git`。
+从 ModelTC/LightMusic 的 main 分支获取本版代码，保留固定子模块。已有工作树先检查改动，不覆盖未知修改。新克隆使用 `git clone --branch main https://github.com/ModelTC/LightMusic.git`。
 
 ```bash
 git status --short

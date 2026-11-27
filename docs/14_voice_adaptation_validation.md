@@ -2,9 +2,9 @@
 
 # 音色微调接入：实际验证记录
 
-历史验证记录：数值和路径描述当日实验；后续按用户要求清理过运行数据，不能假定下列目录全部仍存在。当前命令与保留结果见 [使用说明](../USAGE.md) 和 [验证记录](../VALIDATION.md)；[v0.3 实例](17_v03_walkthrough.md)保留为历史实操。
+历史验证记录：数值描述当日实验，文档中的路径已按 LightMusic 目录名统一；后续按用户要求清理过运行数据，不能假定下列目录全部仍存在。当前命令与保留结果见 [使用说明](../USAGE.md) 和 [验证记录](../VALIDATION.md)；[v0.3 实例](17_v03_walkthrough.md)保留为历史实操。
 
-验证日期：2026-10-26。服务器：`10.210.8.11:7830`。项目目录：`/mnt/afs_f/liuhongda/music-cover-baseline`。
+验证日期：2026-10-26。服务器：`10.210.8.11:7830`。项目目录：`/mnt/devoversea_afs_2/liuhongda/LightMusic`。
 
 这次验证使用孙燕姿现有 16 秒参考片段、秋意浓、upbeat bossa nova / samba jazz。目的是验证训练、续训、对照评估、导出和歌曲流水线接入；16 秒素材不足以证明对目标歌手音色的泛化能力。
 
@@ -20,7 +20,7 @@
 
 整曲验证复用了原运行 00–04 的真实状态和音频；控制器重新核验代码、参数、运行依赖、产物哈希和成功清单。新 05–11 产物写到独立目录。原运行的状态与交付文件保持不动。`reused_upstream.json` 记录了来源。
 
-旧运行使用 `/data/liuhongda/music-cover-baseline` 入口，整曲验证沿用该别名以匹配旧版缓存中的模块路径。它和 `/mnt/afs_f/...` 指向同一共享目录。
+文档中的项目路径已统一为 `/mnt/devoversea_afs_2/liuhongda/LightMusic`。旧运行记录保留执行时路径，读取时由项目的路径解析器映射到当前根目录。
 
 ## 已验证的训练和兼容性
 
@@ -126,11 +126,11 @@ runs/lhd_voice_finetune_validation/stages/10_evaluation/attempt_001/artifacts/vo
 最终交付入口：
 
 ```text
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_voice_finetune_validation/deliverables/final.wav
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_voice_finetune_validation/deliverables/final.mp3
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_voice_finetune_validation/deliverables/listen.html
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_voice_finetune_validation/deliverables/review/index.html
-/mnt/afs_f/liuhongda/music-cover-baseline/runs/lhd_voice_finetune_validation/reviews/review_scores.csv
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_voice_finetune_validation/deliverables/final.wav
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_voice_finetune_validation/deliverables/final.mp3
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_voice_finetune_validation/deliverables/listen.html
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_voice_finetune_validation/deliverables/review/index.html
+/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_voice_finetune_validation/reviews/review_scores.csv
 ```
 
 工程流程通过不等于完成正式音色训练。正式实验需要增加独立目标歌手录音，按录音分组划分训练、验证、测试和提示集合，按相同流程重新训练，再做盲听及歌词/旋律检查。

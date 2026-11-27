@@ -10,7 +10,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL_DIRS = {'envs', 'models', 'cache', 'runs', 'checkpoints'}
 MEDIA = {'.pth', '.pt', '.ckpt', '.safetensors', '.onnx', '.wav', '.mp3', '.flac', '.mp4', '.m4a', '.ogg', '.webm'}
-MACHINE_PATH = re.compile(r'/(?:mnt|Users|home)/[^\s\"\'`<>]+|/data/[^\s\"\'`<>]+/music-cover-baseline')
+MACHINE_PATH = re.compile(r'/(?:mnt|Users|home)/[^\s\"\'`<>]+|/data/[^\s\"\'`<>]+/(?:LightMusic|music-cover-baseline)')
 
 
 def git(root, *args):

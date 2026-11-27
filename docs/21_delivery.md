@@ -23,7 +23,7 @@
 ## 交付验收命令
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 /opt/conda/bin/python scripts/check_project.py --output cache/source_check.json
 PYTHONPATH=src envs/separator/bin/python -m unittest discover -s tests -v

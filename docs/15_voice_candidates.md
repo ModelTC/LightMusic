@@ -7,7 +7,7 @@
 本例为孙燕姿参考音色＋《秋意浓》＋upbeat bossa nova and samba jazz。新建运行：
 
 ```bash
-cd /data/liuhongda/music-cover-baseline
+cd /mnt/devoversea_afs_2/liuhongda/LightMusic
 export PATH="/opt/conda/bin:$PATH"
 bash scripts/run_baseline.sh \
   --config configs/tasks/qiu_yi_nong_bossa_nova_sun_yanzi.yaml \
@@ -20,7 +20,7 @@ bash scripts/run_baseline.sh \
 - `stages/04_vocal_separation/attempt_001/artifacts/vocals.wav`：03 新曲经 04 分离出的源人声。
 - `stages/04_vocal_separation/attempt_001/artifacts/instrumental.wav`：所有候选共用的伴奏。
 
-以上文件均在 `/data/liuhongda/music-cover-baseline/runs/lhd_candidates_example/` 下。实际成功 attempt 由 `stage_state.json` 决定，重跑后可能不是 001。02 决定旋律移调；05 保持 F0，不再额外移调。
+以上文件均在 `/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_candidates_example/` 下。实际成功 attempt 由 `stage_state.json` 决定，重跑后可能不是 001。02 决定旋律移调；05 保持 F0，不再额外移调。
 
 ## 2. 选择一个音色转换入口
 
@@ -46,7 +46,7 @@ bash scripts/05_voice_conversion/finetuned/run.sh \
 
 05 首次输出目录：
 
-`/data/liuhongda/music-cover-baseline/runs/lhd_candidates_example/stages/05_voice_conversion/attempt_001/artifacts/`
+`/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_candidates_example/stages/05_voice_conversion/attempt_001/artifacts/`
 
 | 文件 | 内容 |
 | --- | --- |
@@ -66,7 +66,7 @@ bash scripts/06_mix/run.sh --run runs/lhd_candidates_example
 bash scripts/run_baseline.sh --run runs/lhd_candidates_example --from 07_stem_separation
 ```
 
-06 结果在 `/data/liuhongda/music-cover-baseline/runs/lhd_candidates_example/stages/06_mix/attempt_001/artifacts/`：
+06 结果在 `/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_candidates_example/stages/06_mix/attempt_001/artifacts/`：
 
 - `candidates/candidate_001/final.mp3`、`candidate_002/final.mp3`、`candidate_003/final.mp3`：三个完整混音，同时有对应 WAV 和 `mix.json`。
 - `candidates.html`：同伴奏试听和 05 干声指标对照。
@@ -74,7 +74,7 @@ bash scripts/run_baseline.sh --run runs/lhd_candidates_example --from 07_stem_se
 
 10 的 `evaluation.json` 增加 `voice_candidates`，即使 `voice_check: false` 也保留 05 已计算的全部候选指标。若开启 `voice_check`，另评估推荐人声经 06 对齐后的结果，音频处理不同，分数可能略有差异。
 
-最终入口为 `/data/liuhongda/music-cover-baseline/runs/lhd_candidates_example/deliverables/`：
+最终入口为 `/mnt/devoversea_afs_2/liuhongda/LightMusic/runs/lhd_candidates_example/deliverables/`：
 
 | 路径 | 用途 |
 | --- | --- |
